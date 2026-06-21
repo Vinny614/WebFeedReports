@@ -1,0 +1,52 @@
+# WebFeedReports — Source definitions
+#
+# This file is the declarative seed list of RSS feeds and web pages to ingest.
+# Delivery model (Option B): this file is published to Blob Storage at deploy time
+# and read by the worker at runtime via Managed Identity. The worker seeds the
+# source registry (Table Storage) from this file. The registry is the runtime
+# source of truth, so sources may also be enabled/disabled via the API later.
+#
+# Schema:
+#   version: schema version (int)
+#   defaults: optional default values applied to every source
+#   sources: list of source entries
+#     id:       unique slug (required, [a-z0-9-])
+#     type:     "rss" | "web" (required)
+#     url:      absolute http(s) URL (required)
+#     enabled:  bool (default true)
+#     schedule: cron expression for polling cadence (optional; falls back to defaults)
+#     tags:     list of free-form labels (optional)
+#     crawl:    web-only options
+#       depth:  link-follow depth, 0 = only the given page (default 0)
+#       max_pages: safety cap on pages per run (optional)
+
+version: 1
+
+defaults:
+  enabled: true
+  schedule: "0 */6 * * *" # every 6 hours
+
+sources:
+  - id: azure-updates
+    type: rss
+    url: https://www.microsoft.com/releasecommunications/api/v2/azure/rss
+    tags: [azure, cloud, product-updates]
+
+  - id: azure-blog
+    type: rss
+    url: https://azure.microsoft.com/en-us/blog/feed/
+    tags: [azure, blog]
+
+  - id: ms-security-blog
+    type: web
+    url: https://www.microsoft.com/en-us/security/blog/
+    crawl:
+      depth: 1
+      max_pages: 25
+    tags: [security, blog]
+
+  - id: github-blog
+    type: rss
+    url: https://github.blog/feed/
+    enabled: true
+    tags: [devops, engineering]

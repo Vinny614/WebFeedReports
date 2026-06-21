@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+
+# Build
+dist/
+build/
+
+# Tooling
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Node / frontend
+node_modules/
+.next/
+out/
+
+# Azure
+.azure/*.env
+*.azurelogin
+
+# OS / editor
+.DS_Store
+Thumbs.db
