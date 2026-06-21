@@ -34,6 +34,39 @@ export interface JobSubmitted {
   status: string;
 }
 
+export type JobStatus = "queued" | "running" | "succeeded" | "failed";
+
+export interface JobStatusResponse {
+  job_id: string;
+  type: string;
+  status: JobStatus;
+  created_at: string;
+  updated_at: string;
+  error?: string | null;
+  result_ref?: string | null;
+}
+
+export interface ReportSection {
+  heading: string;
+  content: string;
+}
+
+export interface ReportCitation {
+  source_id: string;
+  title?: string | null;
+  url?: string | null;
+}
+
+export interface BriefingReport {
+  report_id: string;
+  title: string;
+  query: string;
+  generated_at: string;
+  summary: string;
+  sections: ReportSection[];
+  citations: ReportCitation[];
+}
+
 export interface Source {
   id: string;
   type: string;
@@ -71,4 +104,8 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ query, title, tags }),
     }),
+  getReportJob: (jobId: string) =>
+    http<JobStatusResponse>(`/jobs/report/${jobId}`),
+  getReport: (reportId: string) =>
+    http<BriefingReport>(`/reports/${reportId}`),
 };

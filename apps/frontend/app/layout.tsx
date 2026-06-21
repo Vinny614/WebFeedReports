@@ -10,6 +10,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </head>
       <body
         style={{
           fontFamily: "system-ui, sans-serif",
