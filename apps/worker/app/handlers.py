@@ -7,9 +7,8 @@ from webfeed_shared.contracts import IngestJob, JobStatus, JobType, ReportJob
 from webfeed_platform.observability import get_logger
 from webfeed_domain import jobs as jobs_domain
 from webfeed_domain import sources as sources_domain
-from webfeed_domain.extraction import extract_from_html, normalize_text
 from webfeed_domain.indexing import build_chunks, index_chunks
-from webfeed_domain.ingestion import fetch_document_html, ingest_source
+from webfeed_domain.ingestion import extract_document_text, ingest_source
 from webfeed_domain.reporting import generate_report, persist_report
 
 log = get_logger("webfeed-worker.handlers")
@@ -28,8 +27,7 @@ def handle_ingest(job: IngestJob) -> None:
         for source in sources:
             documents = ingest_source(source)
             for doc in documents:
-                html = fetch_document_html(doc)
-                text = normalize_text(extract_from_html(html))
+                text = extract_document_text(doc)
                 chunks = build_chunks(doc, text)
                 total_chunks += index_chunks(chunks)
 

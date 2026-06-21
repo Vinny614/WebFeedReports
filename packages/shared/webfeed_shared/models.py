@@ -45,6 +45,9 @@ class Document(BaseModel):
     fetched_at: datetime = Field(default_factory=_utcnow)
     raw_blob_path: str | None = None
     content_hash: str | None = None
+    # Raw content supplied directly by the source (e.g. an RSS entry's
+    # content:encoded/summary). Preferred over re-fetching the landing page.
+    content_html: str | None = None
 
 
 class Chunk(BaseModel):

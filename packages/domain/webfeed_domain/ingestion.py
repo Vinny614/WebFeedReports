@@ -14,6 +14,7 @@ from azure.core.exceptions import ResourceExistsError
 from tenacity import retry, stop_after_attempt, wait_exponential
 from webfeed_shared.models import Document, Source, SourceType
 
+from webfeed_domain.extraction import extract_from_html, normalize_text
 from webfeed_platform.clients import blob_service_client
 from webfeed_platform.config import get_settings
 from webfeed_platform.observability import get_logger
@@ -55,6 +56,23 @@ def ingest_source(source: Source) -> list[Document]:
     return _ingest_web(source)
 
 
+def _entry_content_html(entry) -> str | None:
+    """Best available content for an RSS entry.
+
+    Prefers the full ``content:encoded`` body, then falls back to the entry
+    summary/description. Returns ``None`` when the entry carries no content.
+    """
+    contents = entry.get("content")
+    if contents:
+        best = max((c.get("value", "") for c in contents), key=len, default="")
+        if best.strip():
+            return best
+    summary = entry.get("summary")
+    if summary and summary.strip():
+        return summary
+    return None
+
+
 def _ingest_rss(source: Source) -> list[Document]:
     raw = _fetch(str(source.url))
     raw_path = _store_raw(source.id, "feed.xml", raw)
@@ -74,6 +92,7 @@ def _ingest_rss(source: Source) -> list[Document]:
                 title=entry.get("title"),
                 published_at=published,
                 raw_blob_path=raw_path,
+                content_html=_entry_content_html(entry),
             )
         )
     log.info("RSS %s -> %d documents", source.id, len(docs))
@@ -99,3 +118,21 @@ def _ingest_web(source: Source) -> list[Document]:
 def fetch_document_html(document: Document) -> str:
     """Fetch the full HTML for a document (used before extraction)."""
     return _fetch(str(document.url)).decode("utf-8", errors="ignore")
+
+
+def extract_document_text(document: Document) -> str:
+    """Return clean text for a document.
+
+    RSS entries carry their own curated content (a full article for feeds that
+    publish ``content:encoded``, or a relevant summary for feeds that only
+    publish teasers). That content is preferred and the landing page is *not*
+    re-fetched, because many sources are single-page apps whose pages extract
+    to generic navigation boilerplate rather than the item's content. The page
+    is only fetched for web sources, or for an RSS entry that carried no usable
+    content at all.
+    """
+    if document.content_html:
+        text = normalize_text(extract_from_html(document.content_html))
+        if text:
+            return text
+    return normalize_text(extract_from_html(fetch_document_html(document)))

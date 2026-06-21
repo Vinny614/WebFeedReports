@@ -105,9 +105,29 @@ def ensure_index() -> None:
     log.info("Created search index %s", settings.search_index_name)
 
 
+def delete_document_chunks(document_id: str) -> int:
+    """Remove all existing chunks for a document so re-ingestion stays clean."""
+    client = search_client()
+    results = client.search(
+        search_text="*",
+        filter=f"document_id eq '{document_id}'",
+        select=["id"],
+        top=1000,
+    )
+    ids = [{"id": r["id"]} for r in results]
+    if not ids:
+        return 0
+    client.delete_documents(documents=ids)
+    log.info("Deleted %d stale chunks for document %s", len(ids), document_id)
+    return len(ids)
+
+
 def index_chunks(chunks: list[Chunk]) -> int:
     if not chunks:
         return 0
+    # Drop any prior chunks for this document so shrinking content does not
+    # leave orphaned (stale) chunks behind in the index.
+    delete_document_chunks(chunks[0].document_id)
     docs = []
     for c in chunks:
         docs.append(

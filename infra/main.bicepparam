@@ -11,5 +11,5 @@ param location = 'centralus'
 // On first deploy, push images to ACR then update these. A simple bootstrap is
 // to deploy infra first with a public placeholder, build/push, then redeploy.
 param apiImage = 'webscrapeacr.azurecr.io/webfeed-api:latest'
-param workerImage = 'webscrapeacr.azurecr.io/webfeed-worker:latest'
+param workerImage = 'webscrapeacr.azurecr.io/webfeed-worker:v4'
 param frontendImage = 'webscrapeacr.azurecr.io/webfeed-frontend:v3'
