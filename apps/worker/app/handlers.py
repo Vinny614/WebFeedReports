@@ -18,6 +18,15 @@ def handle_ingest(job: IngestJob) -> None:
     """Fetch sources, extract content, chunk, embed and index."""
     jobs_domain.update_job_status(job.job_id, JobType.INGEST, JobStatus.RUNNING)
     try:
+        # Re-seed the registry from sources.yaml in Blob so a manual refresh
+        # always reflects the source-of-truth file, even if the worker started
+        # before the blob was published.
+        try:
+            seeded = sources_domain.seed_registry(sources_domain.load_sources_from_blob())
+            log.info("Ingest job %s seeded %d sources from blob", job.job_id, seeded)
+        except Exception as exc:  # noqa: BLE001
+            log.warning("Source re-seed skipped: %s", exc)
+
         sources = sources_domain.list_enabled_sources()
         if job.source_ids:
             wanted = set(job.source_ids)

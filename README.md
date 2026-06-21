@@ -39,7 +39,7 @@ packages/
   domain/          sources, ingestion, extraction, indexing, query, reporting, jobs
 infra/             Bicep modules + main.bicep + main.bicepparam
 config/sources.yaml  Declarative source list (published to Blob at deploy time)
-scripts/           deploy.ps1, build-and-push.ps1
+scripts/           demo-up.ps1, demo-down.ps1, deploy.ps1, build-and-push.ps1
 ```
 
 ## Local development
@@ -60,7 +60,38 @@ cd apps/frontend; npm install; npm run dev
 `DefaultAzureCredential` resolves locally via `az login` / VS Code sign-in, so no
 keys are needed in development.
 
-## Deploy
+## Demo runbook (deploy & teardown)
+
+Spin the whole demo up for a customer session, then tear it down afterwards so it
+costs nothing between demos. Both scripts are idempotent and read `namePrefix` /
+`location` from `infra/main.bicepparam`, so there is one source of truth for names.
+
+**Prerequisites:** `az login` (Contributor on the subscription) and the Azure CLI.
+No local Docker is required — images are built in ACR.
+
+```powershell
+# Stand everything up (build images, deploy infra, seed sources, run first ingest).
+# Prints the live demo URL when finished. Takes ~10–15 min on a clean subscription.
+./scripts/demo-up.ps1
+
+# ...run your customer demo...
+
+# Tear everything down (deletes the resource group, stops all cost).
+./scripts/demo-down.ps1
+```
+
+Options:
+
+- `./scripts/demo-up.ps1 -ResourceGroup rg-webscrape -Tag demo` — override defaults.
+- `./scripts/demo-up.ps1 -SkipIngest` — deploy without the initial content load.
+
+`demo-down.ps1` also purges the soft-deleted Azure OpenAI account so the next
+`demo-up.ps1` can reuse the same name immediately.
+
+## Deploy (manual steps)
+
+The demo runbook above wraps these steps; use them only if you want fine-grained
+control.
 
 ```powershell
 # 1. Create the resource group (you own this step)
