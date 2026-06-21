@@ -73,36 +73,52 @@ export default function ReportsPage() {
 
   return (
     <div>
-      <h1>Generate Briefing Report</h1>
-      <p style={{ color: "#94a3b8" }}>
+      <h1 className="govuk-heading-xl">Generate briefing report</h1>
+      <p className="govuk-body">
         Submit a request and the report will be generated and displayed here
         automatically when it&apos;s ready.
       </p>
 
-      <form onSubmit={submit} style={{ display: "grid", gap: "0.75rem", maxWidth: 520 }}>
-        <input
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Report title (optional)"
-          style={inputStyle}
-          disabled={busy}
-        />
-        <textarea
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="What should the briefing cover?"
-          rows={4}
-          style={inputStyle}
-          disabled={busy}
-        />
-        <button type="submit" style={buttonStyle} disabled={busy || !query.trim()}>
-          {busy ? "Generating…" : "Generate Report"}
+      <form onSubmit={submit}>
+        <div className="govuk-form-group">
+          <label className="govuk-label" htmlFor="report-title">
+            Report title (optional)
+          </label>
+          <input
+            id="report-title"
+            className="govuk-input"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            disabled={busy}
+          />
+        </div>
+
+        <div className="govuk-form-group">
+          <label className="govuk-label" htmlFor="report-query">
+            What should the briefing cover?
+          </label>
+          <textarea
+            id="report-query"
+            className="govuk-textarea"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            rows={4}
+            disabled={busy}
+          />
+        </div>
+
+        <button
+          type="submit"
+          className="govuk-button"
+          disabled={busy || !query.trim()}
+        >
+          {busy ? "Generating…" : "Generate report"}
         </button>
       </form>
 
       {busy && (
-        <div style={statusBox}>
-          <span style={spinnerStyle} aria-hidden />
+        <div className="app-status" role="status" aria-live="polite">
+          <span className="app-spinner" aria-hidden="true" />
           <span>
             {phase === "submitting"
               ? "Submitting request…"
@@ -111,7 +127,18 @@ export default function ReportsPage() {
         </div>
       )}
 
-      {error && <p style={{ color: "#fca5a5", marginTop: "1rem" }}>Error: {error}</p>}
+      {error && (
+        <div
+          className="govuk-error-summary"
+          role="alert"
+          aria-labelledby="report-error-title"
+        >
+          <h2 className="govuk-error-summary__title" id="report-error-title">
+            There is a problem
+          </h2>
+          <p className="govuk-body govuk-!-margin-bottom-0">{error}</p>
+        </div>
+      )}
 
       {report && <ReportView report={report} />}
     </div>
@@ -120,36 +147,43 @@ export default function ReportsPage() {
 
 function ReportView({ report }: { report: BriefingReport }) {
   return (
-    <article style={reportCard}>
-      <h2 style={{ marginBottom: "0.25rem" }}>{report.title}</h2>
-      <p style={{ color: "#64748b", fontSize: "0.85rem", marginTop: 0 }}>
-        Generated {new Date(report.generated_at).toLocaleString()} · query: “{report.query}”
+    <article aria-live="polite">
+      <hr className="app-section-break" />
+      <h2 className="govuk-heading-l">{report.title}</h2>
+      <p className="govuk-caption-m">
+        Generated {new Date(report.generated_at).toLocaleString()} · query: “
+        {report.query}”
       </p>
 
-      <h3 style={sectionHeading}>Summary</h3>
-      <p style={{ lineHeight: 1.6 }}>{report.summary}</p>
+      <h3 className="govuk-heading-m">Summary</h3>
+      <p className="govuk-body">{report.summary}</p>
 
       {report.sections.map((s, i) => (
         <section key={i}>
-          <h3 style={sectionHeading}>{s.heading}</h3>
-          <p style={{ lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{s.content}</p>
+          <h3 className="govuk-heading-m">{s.heading}</h3>
+          <p className="govuk-body app-preserve-whitespace">{s.content}</p>
         </section>
       ))}
 
       {report.citations.length > 0 && (
         <>
-          <h3 style={sectionHeading}>Sources</h3>
-          <ul style={{ paddingLeft: "1.1rem", lineHeight: 1.7 }}>
+          <h3 className="govuk-heading-m">Sources</h3>
+          <ul className="govuk-body">
             {report.citations.map((c, i) => (
               <li key={i}>
                 {c.url ? (
-                  <a href={c.url} target="_blank" rel="noreferrer" style={{ color: "#93c5fd" }}>
+                  <a
+                    className="govuk-link"
+                    href={c.url}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
                     {c.title || c.url}
                   </a>
                 ) : (
                   <span>{c.title || c.source_id}</span>
                 )}
-                <span style={{ color: "#64748b" }}> — {c.source_id}</span>
+                <span className="app-source-meta"> — {c.source_id}</span>
               </li>
             ))}
           </ul>
@@ -158,54 +192,3 @@ function ReportView({ report }: { report: BriefingReport }) {
     </article>
   );
 }
-
-const inputStyle: React.CSSProperties = {
-  padding: "0.6rem",
-  borderRadius: 6,
-  border: "1px solid #334155",
-  background: "#1e293b",
-  color: "#e2e8f0",
-};
-
-const buttonStyle: React.CSSProperties = {
-  padding: "0.6rem 1rem",
-  borderRadius: 6,
-  border: "none",
-  background: "#2563eb",
-  color: "white",
-  cursor: "pointer",
-};
-
-const statusBox: React.CSSProperties = {
-  marginTop: "1.5rem",
-  display: "flex",
-  alignItems: "center",
-  gap: "0.6rem",
-  color: "#94a3b8",
-};
-
-const spinnerStyle: React.CSSProperties = {
-  width: 16,
-  height: 16,
-  border: "2px solid #334155",
-  borderTopColor: "#2563eb",
-  borderRadius: "50%",
-  display: "inline-block",
-  animation: "spin 0.8s linear infinite",
-};
-
-const reportCard: React.CSSProperties = {
-  marginTop: "1.5rem",
-  padding: "1.25rem 1.5rem",
-  borderRadius: 8,
-  background: "#0f172a",
-  border: "1px solid #1e293b",
-};
-
-const sectionHeading: React.CSSProperties = {
-  marginTop: "1.25rem",
-  marginBottom: "0.4rem",
-  color: "#e2e8f0",
-  borderBottom: "1px solid #1e293b",
-  paddingBottom: "0.25rem",
-};

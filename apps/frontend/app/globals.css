@@ -1,0 +1,534 @@
+/*
+ * GOV.UK Design System inspired styles.
+ *
+ * Colours, spacing, focus states and components follow the GOV.UK Design
+ * System (https://design-system.service.gov.uk/). The GDS Transport typeface
+ * is licensed for use only on the gov.uk domain, so this service uses Arial
+ * with the same sizing and weights, as GDS recommends for other services.
+ */
+
+:root {
+  --govuk-black: #0b0c0c;
+  --govuk-white: #ffffff;
+  --govuk-blue: #1d70b8;
+  --govuk-dark-blue: #003078;
+  --govuk-purple: #4c2c92;
+  --govuk-green: #00703c;
+  --govuk-dark-green: #005a30;
+  --govuk-button-shadow: #002d18;
+  --govuk-red: #d4351c;
+  --govuk-yellow: #ffdd00;
+  --govuk-grey-1: #505a5f;
+  --govuk-grey-2: #b1b4b6;
+  --govuk-grey-3: #f3f2f1;
+  --govuk-grey-4: #f8f8f8;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background-color: var(--govuk-grey-3);
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: arial, helvetica, sans-serif;
+  font-weight: 400;
+  font-size: 1.1875rem;
+  line-height: 1.31579;
+  color: var(--govuk-black);
+  background-color: var(--govuk-white);
+}
+
+/* ---------- Focus states (WCAG 2.2 compliant GOV.UK pattern) ---------- */
+
+a:focus,
+button:focus,
+input:focus,
+textarea:focus,
+select:focus,
+.govuk-skip-link:focus {
+  outline: 3px solid transparent;
+  color: var(--govuk-black);
+  background-color: var(--govuk-yellow);
+  box-shadow:
+    0 -2px var(--govuk-yellow),
+    0 4px var(--govuk-black);
+  text-decoration: none;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  border: 2px solid var(--govuk-black);
+  outline: 3px solid var(--govuk-yellow);
+  outline-offset: 0;
+  box-shadow: none;
+  background-color: var(--govuk-white);
+  color: var(--govuk-black);
+}
+
+button:focus {
+  border-color: var(--govuk-yellow);
+  outline: 3px solid transparent;
+  box-shadow: inset 0 0 0 1px var(--govuk-yellow);
+}
+
+/* ---------- Skip link ---------- */
+
+.govuk-skip-link {
+  position: absolute;
+  left: -9999px;
+  padding: 10px 15px;
+  background: var(--govuk-yellow);
+  color: var(--govuk-black);
+  font-weight: 700;
+}
+
+.govuk-skip-link:focus {
+  position: static;
+  left: auto;
+}
+
+/* ---------- Header ---------- */
+
+.govuk-header {
+  background: var(--govuk-black);
+  color: var(--govuk-white);
+  border-bottom: 10px solid var(--govuk-blue);
+}
+
+.govuk-header__container {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 10px 15px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 30px;
+}
+
+.govuk-header__logo {
+  font-size: 1.875rem;
+  line-height: 1;
+  font-weight: 700;
+  color: var(--govuk-white);
+  text-decoration: none;
+}
+
+.govuk-header__logo:hover {
+  color: var(--govuk-white);
+  text-decoration: underline;
+  text-decoration-thickness: 3px;
+}
+
+.govuk-header__nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px 25px;
+  margin-left: auto;
+}
+
+.govuk-header__link {
+  color: var(--govuk-white);
+  text-decoration: none;
+  font-size: 1.0625rem;
+  font-weight: 700;
+}
+
+.govuk-header__link:hover {
+  text-decoration: underline;
+  text-decoration-thickness: 3px;
+}
+
+.govuk-header__link:focus {
+  color: var(--govuk-black);
+}
+
+/* ---------- Layout container ---------- */
+
+.govuk-width-container {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 15px;
+}
+
+.govuk-main-wrapper {
+  display: block;
+  padding-top: 40px;
+  padding-bottom: 60px;
+}
+
+/* ---------- Phase banner ---------- */
+
+.govuk-phase-banner {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--govuk-grey-2);
+}
+
+.govuk-phase-banner__content {
+  font-size: 1rem;
+  color: var(--govuk-black);
+}
+
+.govuk-tag {
+  display: inline-block;
+  margin-right: 10px;
+  padding: 2px 8px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.25;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--govuk-white);
+  background: var(--govuk-blue);
+}
+
+/* ---------- Typography ---------- */
+
+.govuk-heading-xl {
+  font-size: 2.25rem;
+  line-height: 1.09;
+  font-weight: 700;
+  margin: 0 0 30px;
+}
+
+.govuk-heading-l {
+  font-size: 1.6875rem;
+  line-height: 1.11;
+  font-weight: 700;
+  margin: 0 0 20px;
+}
+
+.govuk-heading-m {
+  font-size: 1.5rem;
+  line-height: 1.25;
+  font-weight: 700;
+  margin: 0 0 15px;
+}
+
+.govuk-heading-s {
+  font-size: 1.1875rem;
+  line-height: 1.31579;
+  font-weight: 700;
+  margin: 0 0 15px;
+}
+
+.govuk-body {
+  font-size: 1.1875rem;
+  line-height: 1.31579;
+  margin: 0 0 20px;
+}
+
+.govuk-body-s {
+  font-size: 1rem;
+  line-height: 1.25;
+  margin: 0 0 15px;
+}
+
+.govuk-caption-m {
+  font-size: 1.125rem;
+  color: var(--govuk-grey-1);
+  display: block;
+  margin-bottom: 5px;
+}
+
+.govuk-hint {
+  color: var(--govuk-grey-1);
+  font-size: 1.1875rem;
+  margin: 0 0 15px;
+}
+
+/* ---------- Links ---------- */
+
+.govuk-link {
+  color: var(--govuk-blue);
+  text-decoration: underline;
+  text-decoration-thickness: max(1px, .0625rem);
+  text-underline-offset: 0.1em;
+}
+
+.govuk-link:hover {
+  color: var(--govuk-dark-blue);
+  text-decoration-thickness: max(3px, .1875rem, .12em);
+}
+
+.govuk-link:visited {
+  color: var(--govuk-purple);
+}
+
+.govuk-link:focus {
+  color: var(--govuk-black);
+}
+
+/* ---------- Forms ---------- */
+
+.govuk-form-group {
+  margin-bottom: 20px;
+}
+
+.govuk-label {
+  display: block;
+  font-size: 1.1875rem;
+  font-weight: 400;
+  margin-bottom: 5px;
+}
+
+.govuk-input,
+.govuk-textarea {
+  width: 100%;
+  padding: 5px;
+  border: 2px solid var(--govuk-black);
+  border-radius: 0;
+  font-family: inherit;
+  font-size: 1.1875rem;
+  line-height: 1.31579;
+  color: var(--govuk-black);
+  background: var(--govuk-white);
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.govuk-input {
+  height: 40px;
+}
+
+.govuk-textarea {
+  display: block;
+  min-height: 120px;
+  resize: vertical;
+}
+
+.govuk-input--width-two-thirds {
+  max-width: 41ex;
+}
+
+/* ---------- Buttons ---------- */
+
+.govuk-button {
+  display: inline-block;
+  position: relative;
+  margin: 0 0 22px;
+  padding: 8px 10px 7px;
+  border: 2px solid transparent;
+  border-radius: 0;
+  font-family: inherit;
+  font-size: 1.1875rem;
+  font-weight: 400;
+  line-height: 1;
+  text-align: center;
+  text-decoration: none;
+  color: var(--govuk-white);
+  background-color: var(--govuk-green);
+  box-shadow: 0 2px 0 var(--govuk-button-shadow);
+  cursor: pointer;
+}
+
+.govuk-button:hover {
+  background-color: var(--govuk-dark-green);
+}
+
+.govuk-button:active {
+  top: 2px;
+}
+
+.govuk-button:focus:not(:active):not(:hover) {
+  border-color: var(--govuk-yellow);
+  color: var(--govuk-black);
+  background-color: var(--govuk-yellow);
+  box-shadow: 0 2px 0 var(--govuk-black);
+}
+
+.govuk-button[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.govuk-button--secondary {
+  color: var(--govuk-black);
+  background-color: var(--govuk-grey-3);
+  box-shadow: 0 2px 0 #929191;
+}
+
+.govuk-button--secondary:hover {
+  background-color: #dbdad9;
+}
+
+/* ---------- Tables ---------- */
+
+.govuk-table {
+  width: 100%;
+  margin-bottom: 30px;
+  border-spacing: 0;
+  border-collapse: collapse;
+  font-size: 1.1875rem;
+}
+
+.govuk-table__caption {
+  font-weight: 700;
+  text-align: left;
+  margin-bottom: 15px;
+}
+
+.govuk-table__header {
+  font-weight: 700;
+  text-align: left;
+  padding: 10px 20px 10px 0;
+  border-bottom: 1px solid var(--govuk-grey-2);
+  vertical-align: top;
+}
+
+.govuk-table__cell {
+  padding: 10px 20px 10px 0;
+  border-bottom: 1px solid var(--govuk-grey-2);
+  vertical-align: top;
+  word-break: break-word;
+}
+
+/* ---------- Panel ---------- */
+
+.govuk-panel {
+  margin-bottom: 30px;
+  padding: 35px;
+  border: 5px solid transparent;
+  text-align: center;
+  color: var(--govuk-white);
+  background: var(--govuk-green);
+}
+
+.govuk-panel__title {
+  margin: 0 0 15px;
+  font-size: 2.25rem;
+  font-weight: 700;
+}
+
+/* ---------- Inset text & error ---------- */
+
+.govuk-inset-text {
+  margin: 20px 0;
+  padding: 15px;
+  border-left: 10px solid var(--govuk-grey-2);
+  background: var(--govuk-white);
+}
+
+.govuk-error-summary {
+  margin-bottom: 30px;
+  padding: 20px;
+  border: 5px solid var(--govuk-red);
+  color: var(--govuk-black);
+  background: var(--govuk-white);
+}
+
+.govuk-error-summary__title {
+  margin: 0 0 15px;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.govuk-error-message {
+  font-weight: 700;
+  color: var(--govuk-red);
+  margin: 0 0 15px;
+}
+
+/* ---------- Result / search cards ---------- */
+
+.app-card {
+  padding: 20px;
+  margin-bottom: 20px;
+  border: 1px solid var(--govuk-grey-2);
+  background: var(--govuk-white);
+}
+
+.app-card__header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.app-card__title {
+  margin: 0;
+  font-size: 1.1875rem;
+  font-weight: 700;
+}
+
+.app-card__score {
+  color: var(--govuk-grey-1);
+  font-size: 1rem;
+  white-space: nowrap;
+}
+
+/* ---------- Status / loading ---------- */
+
+.app-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0;
+  font-size: 1.1875rem;
+  color: var(--govuk-grey-1);
+}
+
+.app-spinner {
+  width: 24px;
+  height: 24px;
+  border: 4px solid var(--govuk-grey-2);
+  border-top-color: var(--govuk-blue);
+  border-radius: 50%;
+  display: inline-block;
+  animation: app-spin 0.8s linear infinite;
+}
+
+@keyframes app-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.app-section-break {
+  margin: 30px 0;
+  border: 0;
+  border-bottom: 1px solid var(--govuk-grey-2);
+}
+
+/* ---------- Footer ---------- */
+
+.govuk-footer {
+  margin-top: 40px;
+  padding: 25px 0;
+  border-top: 1px solid var(--govuk-grey-2);
+  background: var(--govuk-grey-3);
+  font-size: 1rem;
+}
+
+.govuk-footer__container {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 15px;
+  color: var(--govuk-grey-1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-spinner {
+    animation: none;
+  }
+}
+
+/* ---------- Spacing overrides ---------- */
+
+.govuk-\!-margin-bottom-0 {
+  margin-bottom: 0 !important;
+}
+
+.app-source-meta {
+  color: var(--govuk-grey-1);
+}
+
+.app-preserve-whitespace {
+  white-space: pre-wrap;
+}

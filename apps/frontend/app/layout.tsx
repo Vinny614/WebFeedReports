@@ -1,3 +1,5 @@
+import "./globals.css";
+
 export const metadata = {
   title: "WebFeedReports",
   description: "RSS & web briefing platform",
@@ -10,42 +12,52 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <head>
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-      </head>
-      <body
-        style={{
-          fontFamily: "system-ui, sans-serif",
-          margin: 0,
-          background: "#0f172a",
-          color: "#e2e8f0",
-        }}
-      >
-        <header
-          style={{
-            padding: "1rem 2rem",
-            borderBottom: "1px solid #1e293b",
-            display: "flex",
-            gap: "1.5rem",
-            alignItems: "center",
-          }}
-        >
-          <strong style={{ fontSize: "1.1rem" }}>WebFeedReports</strong>
-          <nav style={{ display: "flex", gap: "1rem" }}>
-            <a href="/" style={{ color: "#93c5fd" }}>
-              Dashboard
+      <body>
+        <a href="#main-content" className="govuk-skip-link">
+          Skip to main content
+        </a>
+
+        <header className="govuk-header" role="banner">
+          <div className="govuk-header__container">
+            <a href="/" className="govuk-header__logo">
+              WebFeedReports
             </a>
-            <a href="/search" style={{ color: "#93c5fd" }}>
-              Search
-            </a>
-            <a href="/reports" style={{ color: "#93c5fd" }}>
-              Reports
-            </a>
-          </nav>
+            <nav className="govuk-header__nav" aria-label="Menu">
+              <a href="/" className="govuk-header__link">
+                Dashboard
+              </a>
+              <a href="/search" className="govuk-header__link">
+                Search
+              </a>
+              <a href="/reports" className="govuk-header__link">
+                Reports
+              </a>
+            </nav>
+          </div>
         </header>
-        <main style={{ padding: "2rem", maxWidth: 960, margin: "0 auto" }}>
-          {children}
-        </main>
+
+        <div className="govuk-width-container">
+          <div className="govuk-phase-banner">
+            <p className="govuk-phase-banner__content">
+              <strong className="govuk-tag">Beta</strong>
+              <span>
+                This is a new service — your feedback will help us to improve it.
+              </span>
+            </p>
+          </div>
+
+          <main className="govuk-main-wrapper" id="main-content" role="main">
+            {children}
+          </main>
+        </div>
+
+        <footer className="govuk-footer" role="contentinfo">
+          <div className="govuk-footer__container">
+            <p className="govuk-body-s govuk-!-margin-bottom-0">
+              WebFeedReports — RSS &amp; web briefing platform.
+            </p>
+          </div>
+        </footer>
       </body>
     </html>
   );

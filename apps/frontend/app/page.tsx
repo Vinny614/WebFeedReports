@@ -11,34 +11,44 @@ export default async function DashboardPage() {
 
   return (
     <div>
-      <h1>Dashboard</h1>
-      <p style={{ color: "#94a3b8" }}>
+      <h1 className="govuk-heading-xl">Dashboard</h1>
+      <p className="govuk-body">
         Configured ingestion sources. Use Search to explore indexed content and
         Reports to generate a briefing.
       </p>
 
       {error && (
-        <p style={{ color: "#fca5a5" }}>
-          Could not load sources (is the API running?): {error}
-        </p>
+        <div className="govuk-error-summary" role="alert" aria-labelledby="error-summary-title">
+          <h2 className="govuk-error-summary__title" id="error-summary-title">
+            There is a problem
+          </h2>
+          <p className="govuk-body govuk-!-margin-bottom-0">
+            Could not load sources (is the API running?): {error}
+          </p>
+        </div>
       )}
 
-      <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "1rem" }}>
+      <table className="govuk-table">
+        <caption className="govuk-table__caption">Ingestion sources</caption>
         <thead>
-          <tr style={{ textAlign: "left", borderBottom: "1px solid #1e293b" }}>
-            <th style={{ padding: "0.5rem" }}>ID</th>
-            <th style={{ padding: "0.5rem" }}>Type</th>
-            <th style={{ padding: "0.5rem" }}>URL</th>
-            <th style={{ padding: "0.5rem" }}>Tags</th>
+          <tr>
+            <th scope="col" className="govuk-table__header">ID</th>
+            <th scope="col" className="govuk-table__header">Type</th>
+            <th scope="col" className="govuk-table__header">URL</th>
+            <th scope="col" className="govuk-table__header">Tags</th>
           </tr>
         </thead>
         <tbody>
           {sources.map((s) => (
-            <tr key={s.id} style={{ borderBottom: "1px solid #1e293b" }}>
-              <td style={{ padding: "0.5rem" }}>{s.id}</td>
-              <td style={{ padding: "0.5rem" }}>{s.type}</td>
-              <td style={{ padding: "0.5rem", color: "#93c5fd" }}>{s.url}</td>
-              <td style={{ padding: "0.5rem" }}>{s.tags.join(", ")}</td>
+            <tr key={s.id}>
+              <td className="govuk-table__cell">{s.id}</td>
+              <td className="govuk-table__cell">{s.type}</td>
+              <td className="govuk-table__cell">
+                <a className="govuk-link" href={s.url} target="_blank" rel="noreferrer">
+                  {s.url}
+                </a>
+              </td>
+              <td className="govuk-table__cell">{s.tags.join(", ")}</td>
             </tr>
           ))}
         </tbody>

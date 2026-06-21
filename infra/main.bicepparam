@@ -12,4 +12,4 @@ param location = 'centralus'
 // to deploy infra first with a public placeholder, build/push, then redeploy.
 param apiImage = 'webscrapeacr.azurecr.io/webfeed-api:latest'
 param workerImage = 'webscrapeacr.azurecr.io/webfeed-worker:v4'
-param frontendImage = 'webscrapeacr.azurecr.io/webfeed-frontend:v3'
+param frontendImage = 'webscrapeacr.azurecr.io/webfeed-frontend:v4'

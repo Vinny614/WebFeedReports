@@ -25,63 +25,67 @@ export default function SearchPage() {
 
   return (
     <div>
-      <h1>Search</h1>
-      <form onSubmit={runSearch} style={{ display: "flex", gap: "0.5rem" }}>
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search indexed content..."
-          style={{
-            flex: 1,
-            padding: "0.6rem",
-            borderRadius: 6,
-            border: "1px solid #334155",
-            background: "#1e293b",
-            color: "#e2e8f0",
-          }}
-        />
-        <button
-          type="submit"
-          style={{
-            padding: "0.6rem 1rem",
-            borderRadius: 6,
-            border: "none",
-            background: "#2563eb",
-            color: "white",
-            cursor: "pointer",
-          }}
-        >
-          Search
+      <h1 className="govuk-heading-xl">Search</h1>
+      <form onSubmit={runSearch}>
+        <div className="govuk-form-group">
+          <label className="govuk-label" htmlFor="search-query">
+            Search indexed content
+          </label>
+          <input
+            id="search-query"
+            className="govuk-input"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="e.g. Cosmos DB distributed transactions"
+          />
+        </div>
+        <button type="submit" className="govuk-button" disabled={loading}>
+          {loading ? "Searching…" : "Search"}
         </button>
       </form>
 
-      {loading && <p>Searching...</p>}
-      {error && <p style={{ color: "#fca5a5" }}>{error}</p>}
+      {loading && (
+        <div className="app-status" role="status">
+          <span className="app-spinner" aria-hidden="true" />
+          <span>Searching…</span>
+        </div>
+      )}
 
-      <div style={{ marginTop: "1.5rem", display: "grid", gap: "1rem" }}>
-        {items.map((it) => (
-          <div
-            key={it.chunk_id}
-            style={{
-              padding: "1rem",
-              borderRadius: 8,
-              background: "#1e293b",
-              border: "1px solid #334155",
-            }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <strong>{it.title ?? it.source_id}</strong>
-              <span style={{ color: "#64748b" }}>score {it.score.toFixed(2)}</span>
+      {error && (
+        <div className="govuk-error-summary" role="alert" aria-labelledby="search-error-title">
+          <h2 className="govuk-error-summary__title" id="search-error-title">
+            There is a problem
+          </h2>
+          <p className="govuk-body govuk-!-margin-bottom-0">{error}</p>
+        </div>
+      )}
+
+      {!loading && items.length > 0 && (
+        <div aria-live="polite">
+          <h2 className="govuk-heading-m">
+            {items.length} result{items.length === 1 ? "" : "s"}
+          </h2>
+          {items.map((it) => (
+            <div key={it.chunk_id} className="app-card">
+              <div className="app-card__header">
+                <h3 className="app-card__title">{it.title ?? it.source_id}</h3>
+                <span className="app-card__score">score {it.score.toFixed(2)}</span>
+              </div>
+              <p className="govuk-body">{it.snippet}</p>
+              {it.url && (
+                <a
+                  className="govuk-link"
+                  href={it.url}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {it.url}
+                </a>
+              )}
             </div>
-            <p style={{ color: "#cbd5e1" }}>{it.snippet}</p>
-            {it.url && (
-              <a href={it.url} style={{ color: "#93c5fd" }} target="_blank">
-                {it.url}
-              </a>
-            )}
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
