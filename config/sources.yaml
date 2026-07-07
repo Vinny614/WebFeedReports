@@ -19,6 +19,9 @@
 #     crawl:    web-only options
 #       depth:  link-follow depth, 0 = only the given page (default 0)
 #       max_pages: safety cap on pages per run (optional)
+#
+# NOTE: The web ingester snapshots a SINGLE page (crawl.depth/max_pages are not
+# yet honoured). Prefer "rss" where a real feed exists.
 
 version: 1
 
@@ -27,26 +30,105 @@ defaults:
   schedule: "0 */6 * * *" # every 6 hours
 
 sources:
-  - id: azure-updates
-    type: rss
-    url: https://www.microsoft.com/releasecommunications/api/v2/azure/rss
-    tags: [azure, cloud, product-updates]
-
-  - id: azure-blog
-    type: rss
-    url: https://azure.microsoft.com/en-us/blog/feed/
-    tags: [azure, blog]
-
-  - id: ms-security-blog
+  # ── Focus businesses ───────────────────────────────────────────────
+  - id: airbus-press
     type: web
-    url: https://www.microsoft.com/en-us/security/blog/
-    crawl:
-      depth: 1
-      max_pages: 25
-    tags: [security, blog]
+    url: https://www.airbus.com/en/newsroom/press-releases
+    tags: [airbus, defence, supplier, business]
 
-  - id: github-blog
+  - id: boeing-press
     type: rss
-    url: https://github.blog/feed/
-    enabled: true
-    tags: [devops, engineering]
+    url: https://boeing.mediaroom.com/news-releases-statements?pagetemplate=rss&category=1
+    tags: [boeing, defence, supplier, business]
+
+  - id: leonardo-press
+    type: web
+    url: https://www.leonardo.com/en/media-hub/press-releases
+    tags: [leonardo, defence, supplier, business]
+
+  # ── Aviation safety & regulators ───────────────────────────────────
+  - id: aaib-reports
+    type: rss
+    url: https://www.gov.uk/aaib-reports.atom
+    tags: [aviation-safety, uk, air-accidents]
+
+  - id: caa-cap722
+    type: web
+    url: https://www.caa.co.uk/our-work/publications/documents/content/cap722/
+    tags: [caa, uk, regulation, uas]
+
+  - id: easa-press-releases
+    type: rss
+    url: https://www.easa.europa.eu/en/newsroom-and-events/press-releases/feed.xml
+    tags: [easa, eu, aviation-safety]
+
+  - id: eurocontrol-ead
+    type: web
+    url: https://www.eurocontrol.int/service/european-ais-database
+    tags: [eurocontrol, eu, aviation, ais]
+
+  - id: nats-uk-aip
+    type: web
+    url: https://nats-uk.ead-it.com/cms-nats/opencms/en/Publications/digital-datasets/
+    tags: [nats, uk, aviation, aip]
+
+  # ── Defence & arms transfers ───────────────────────────────────────
+  - id: eda-edf
+    type: web
+    url: https://eda.europa.eu/what-we-do/EU-defence-initiatives/european-defence-fund-(edf)
+    tags: [eda, eu, defence, funding]
+
+  - id: occar
+    type: web
+    url: https://www.occar.int/
+    tags: [occar, eu, defence, procurement]
+
+  - id: sipri-arms-transfers
+    type: web
+    url: https://www.sipri.org/databases/armstransfers
+    tags: [sipri, defence, arms-transfers]
+
+  - id: unroca
+    type: web
+    url: https://www.unroca.org/
+    tags: [un, defence, arms-transfers]
+
+  # ── Legal notices ──────────────────────────────────────────────────
+  - id: the-gazette
+    type: rss
+    url: https://www.thegazette.co.uk/all-notices/notice/data.feed
+    tags: [uk, legal-notices, gazette]
+
+# ════════════════════════════════════════════════════════════════════
+# FUTURE API SOURCES (not yet active)
+# ════════════════════════════════════════════════════════════════════
+# These are structured REST APIs, not RSS/web pages. They require a new
+# "api" source type + per-provider connector in the worker before they can
+# be enabled. Kept here as a backlog. Do NOT uncomment until that connector
+# exists — a plain web GET of these returns JSON/docs, not usable content.
+#
+# ── Keyless (Phase 1 — no account, no infra change) ──────────────────
+#   cordis-projects         https://cordis.europa.eu/projects           # EU research projects
+#   gtr-ukri                https://gtr.ukri.org/resources/api.html      # UKRI Gateway to Research
+#   data-gov-uk             https://www.data.gov.uk/                     # UK open-data (CKAN API)
+#   gov-uk-contracts-finder https://www.gov.uk/contracts-finder          # UK tenders (OCDS API)
+#   ted-europa              https://ted.europa.eu/en/api                 # EU tenders (public search)
+#
+# ── Authenticated (Phase 2 — account + API key, store in Key Vault) ──
+#   companies-house         https://developer.company-information.service.gov.uk/
+#       Free. Register dev account -> create app -> REST API key (HTTP Basic username).
+#   sam-gov-opportunities   https://open.gsa.gov/api/get-opportunities-public-api/
+#       Free. Needs Login.gov + SAM.gov account -> request public API key (api.data.gov).
+#   epo-ops                 https://www.epo.org/en/searching-for-patents/data/web-services/ops
+#       Free tier (fair-use quota). EPO account -> register app -> OAuth2 key + secret.
+#   opencorporates          https://api.opencorporates.com/
+#       Paid/commercial (apply for account/token). Companies House covers UK for free.
+#
+# ── No clean public API (stay web / manual for now) ──────────────────
+#   wipo-patentscope        https://patentscope.wipo.int/search/en/search.jsf  # search UI only
+#   gov-uk-search-patent    https://www.gov.uk/search-for-patent               # search UI only
+#
+# ── Blocked by bot protection (not fetchable by the worker) ──────────
+#   dsca-arms-sales         https://www.dsca.mil/press-media/major-arms-sales
+#       US major arms sales. Returns HTTP 403 to the worker (JS/WAF challenge),
+#       even with a browser User-Agent. Needs a headless-browser fetch to ingest.

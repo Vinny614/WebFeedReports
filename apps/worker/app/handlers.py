@@ -33,18 +33,37 @@ def handle_ingest(job: IngestJob) -> None:
             sources = [s for s in sources if s.id in wanted]
 
         total_chunks = 0
+        failed_sources = 0
+        failed_docs = 0
         for source in sources:
-            documents = ingest_source(source)
+            # A single unreachable source (e.g. an HTTP 403/404 or a site that
+            # blocks the Azure egress IP) must not abort the whole ingest.
+            try:
+                documents = ingest_source(source)
+            except Exception as exc:  # noqa: BLE001
+                failed_sources += 1
+                log.warning("Skipping source %s: %s", source.id, exc)
+                continue
             for doc in documents:
-                text = extract_document_text(doc)
-                chunks = build_chunks(doc, text)
-                total_chunks += index_chunks(chunks)
+                # Likewise, a single item whose article link fails to fetch or
+                # extract is skipped rather than failing the entire job.
+                try:
+                    text = extract_document_text(doc)
+                    chunks = build_chunks(doc, text)
+                    total_chunks += index_chunks(chunks)
+                except Exception as exc:  # noqa: BLE001
+                    failed_docs += 1
+                    log.warning("Skipping document %s (%s): %s", doc.id, doc.url, exc)
+                    continue
 
         jobs_domain.update_job_status(
             job.job_id, JobType.INGEST, JobStatus.SUCCEEDED,
             result_ref=f"chunks={total_chunks}",
         )
-        log.info("Ingest job %s done: %d chunks", job.job_id, total_chunks)
+        log.info(
+            "Ingest job %s done: %d chunks (%d sources skipped, %d docs skipped)",
+            job.job_id, total_chunks, failed_sources, failed_docs,
+        )
     except Exception as exc:  # noqa: BLE001
         jobs_domain.update_job_status(
             job.job_id, JobType.INGEST, JobStatus.FAILED, error=str(exc)
