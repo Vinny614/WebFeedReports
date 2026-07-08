@@ -43,6 +43,7 @@ def _build_context(query: str, filters: SearchFilters) -> list[dict]:
         source_ids=filters.source_ids,
         date_from=filters.date_from,
         date_to=filters.date_to,
+        tags=filters.tags,
     )
     return [
         {
@@ -145,7 +146,7 @@ def _generate_section(
         _section_query(base_query, section),
         top=8,
         source_ids=filters.source_ids,
-        tags=section.tags,
+        tags=list(dict.fromkeys([*filters.tags, *section.tags])),
         date_from=filters.date_from,
         date_to=filters.date_to,
     )

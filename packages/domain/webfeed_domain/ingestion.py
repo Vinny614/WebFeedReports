@@ -16,7 +16,11 @@ from bs4 import BeautifulSoup
 from tenacity import retry, stop_after_attempt, wait_exponential
 from webfeed_shared.models import Document, Source, SourceType
 
-from webfeed_domain.extraction import extract_from_html, normalize_text
+from webfeed_domain.extraction import (
+    extract_date_from_html,
+    extract_from_html,
+    normalize_text,
+)
 from webfeed_platform.clients import blob_service_client
 from webfeed_platform.config import get_settings
 from webfeed_platform.observability import get_logger
@@ -191,19 +195,27 @@ def fetch_document_html(document: Document) -> str:
     return _fetch(str(document.url)).decode("utf-8", errors="ignore")
 
 
-def extract_document_text(document: Document) -> str:
-    """Return clean text for a document.
+def extract_document_content(document: Document) -> tuple[str, datetime | None]:
+    """Return ``(clean_text, published_date)`` for a document.
 
     RSS entries carry their own curated content (a full article for feeds that
     publish ``content:encoded``, or a relevant summary for feeds that only
     publish teasers). That content is preferred and the landing page is *not*
     re-fetched, because many sources are single-page apps whose pages extract
-    to generic navigation boilerplate rather than the item's content. The page
-    is only fetched for web sources, or for an RSS entry that carried no usable
-    content at all.
+    to generic navigation boilerplate rather than the item's content. In that
+    case no date is derived here — the feed already supplies ``published_at``.
+
+    For web (crawled) documents the article page is fetched once and both the
+    main text and the article's published date are extracted from the same HTML.
     """
     if document.content_html:
         text = normalize_text(extract_from_html(document.content_html))
         if text:
-            return text
-    return normalize_text(extract_from_html(fetch_document_html(document)))
+            return text, None
+    html = fetch_document_html(document)
+    return normalize_text(extract_from_html(html)), extract_date_from_html(html)
+
+
+def extract_document_text(document: Document) -> str:
+    """Return clean text for a document (date discarded)."""
+    return extract_document_content(document)[0]

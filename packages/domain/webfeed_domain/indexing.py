@@ -48,7 +48,7 @@ def embed_texts(texts: list[str]) -> list[list[float]]:
     return [d.embedding for d in resp.data]
 
 
-def build_chunks(document: Document, text: str) -> list[Chunk]:
+def build_chunks(document: Document, text: str, tags: list[str] | None = None) -> list[Chunk]:
     parts = chunk_text(text)
     if not parts:
         return []
@@ -65,6 +65,7 @@ def build_chunks(document: Document, text: str) -> list[Chunk]:
                 url=document.url,
                 title=document.title,
                 published_at=document.published_at,
+                tags=list(tags or []),
                 embedding=emb,
             )
         )
@@ -88,6 +89,12 @@ def ensure_index() -> None:
         SearchableField(name="title", type=SearchFieldDataType.String),
         SimpleField(name="url", type=SearchFieldDataType.String),
         SimpleField(name="published_at", type=SearchFieldDataType.DateTimeOffset, filterable=True, sortable=True),
+        SearchField(
+            name="tags",
+            type=SearchFieldDataType.Collection(SearchFieldDataType.String),
+            filterable=True,
+            facetable=True,
+        ),
         SearchField(
             name="embedding",
             type=SearchFieldDataType.Collection(SearchFieldDataType.Single),
@@ -154,6 +161,7 @@ def index_chunks(chunks: list[Chunk]) -> int:
                 "title": c.title or "",
                 "url": str(c.url) if c.url else "",
                 "published_at": c.published_at.isoformat() if c.published_at else None,
+                "tags": c.tags or [],
                 "embedding": c.embedding,
             }
         )

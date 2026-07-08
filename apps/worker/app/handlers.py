@@ -16,7 +16,7 @@ from webfeed_domain import jobs as jobs_domain
 from webfeed_domain import sources as sources_domain
 from webfeed_domain import templates as templates_domain
 from webfeed_domain.indexing import build_chunks, index_chunks, reset_index
-from webfeed_domain.ingestion import extract_document_text, ingest_source
+from webfeed_domain.ingestion import extract_document_content, ingest_source
 from webfeed_domain.reporting import (
     generate_report,
     generate_templated_report,
@@ -69,8 +69,12 @@ def handle_ingest(job: IngestJob) -> None:
                 # Likewise, a single item whose article link fails to fetch or
                 # extract is skipped rather than failing the entire job.
                 try:
-                    text = extract_document_text(doc)
-                    chunks = build_chunks(doc, text)
+                    text, extracted_date = extract_document_content(doc)
+                    # Crawled web pages have no feed date; derive it from the
+                    # article's own metadata so date filtering works for them.
+                    if extracted_date and doc.published_at is None:
+                        doc.published_at = extracted_date
+                    chunks = build_chunks(doc, text, tags=source.tags)
                     total_chunks += index_chunks(chunks)
                 except Exception as exc:  # noqa: BLE001
                     failed_docs += 1
@@ -116,13 +120,13 @@ def _parse_dt(value: str | None) -> datetime | None:
 
 
 def _build_search_filters(job: ReportJob) -> SearchFilters:
-    """Reconstruct company + date-range filters from the job's filters dict."""
+    """Reconstruct company, topic and date-range filters from the job dict."""
     f = job.filters
     source_ids = [s for s in (f.get("source_ids") or "").split(",") if s]
-    # Legacy report-level "tags" were source-id restrictions; keep honouring them.
-    source_ids += [t for t in (f.get("tags") or "").split(",") if t]
+    topics = [t for t in (f.get("tags") or "").split(",") if t]
     return SearchFilters(
         source_ids=list(dict.fromkeys(source_ids)),
+        tags=list(dict.fromkeys(topics)),
         date_from=_parse_dt(f.get("date_from")),
         date_to=_parse_dt(f.get("date_to")),
     )

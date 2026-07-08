@@ -16,6 +16,16 @@ const COMPANY_FILTERS: { id: string; label: string }[] = [
   { id: "boeing-press", label: "Boeing" },
 ];
 
+const TOPIC_FILTERS: { id: string; label: string }[] = [
+  { id: "defence", label: "Defence" },
+  { id: "aviation-safety", label: "Aviation safety" },
+  { id: "regulation", label: "Regulation" },
+  { id: "arms-sales", label: "Arms sales" },
+  { id: "arms-transfers", label: "Arms transfers" },
+  { id: "business", label: "Business" },
+  { id: "security", label: "Security" },
+];
+
 export default function SearchPage() {
   const [query, setQuery] = useState("");
   const [items, setItems] = useState<QueryResultItem[]>([]);
@@ -23,12 +33,19 @@ export default function SearchPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [selectedSources, setSelectedSources] = useState<string[]>([]);
+  const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
   function toggleSource(id: string) {
     setSelectedSources((prev) =>
       prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
+    );
+  }
+
+  function toggleTopic(id: string) {
+    setSelectedTopics((prev) =>
+      prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id]
     );
   }
 
@@ -39,6 +56,7 @@ export default function SearchPage() {
     try {
       const res = await api.query(query, {
         sourceIds: selectedSources,
+        topics: selectedTopics,
         dateFrom: dayStart(dateFrom),
         dateTo: dayEnd(dateTo),
       });
@@ -116,6 +134,29 @@ export default function SearchPage() {
                       htmlFor={`src-${c.id}`}
                     >
                       {c.label}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </fieldset>
+
+            <fieldset className="govuk-fieldset">
+              <legend className="govuk-fieldset__legend">Topics</legend>
+              <div className="govuk-checkboxes govuk-checkboxes--small app-checkbox-grid">
+                {TOPIC_FILTERS.map((t) => (
+                  <div key={t.id} className="govuk-checkboxes__item">
+                    <input
+                      className="govuk-checkboxes__input"
+                      id={`topic-${t.id}`}
+                      type="checkbox"
+                      checked={selectedTopics.includes(t.id)}
+                      onChange={() => toggleTopic(t.id)}
+                    />
+                    <label
+                      className="govuk-label govuk-checkboxes__label"
+                      htmlFor={`topic-${t.id}`}
+                    >
+                      {t.label}
                     </label>
                   </div>
                 ))}

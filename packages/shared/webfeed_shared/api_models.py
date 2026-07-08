@@ -15,9 +15,10 @@ def _utcnow() -> datetime:
 
 
 class SearchFilters(BaseModel):
-    """Retrieval filters applied to the search index (company + date range)."""
+    """Retrieval filters applied to the search index (company, topic, dates)."""
 
     source_ids: list[str] = Field(default_factory=list)
+    tags: list[str] = Field(default_factory=list)
     date_from: datetime | None = None
     date_to: datetime | None = None
 

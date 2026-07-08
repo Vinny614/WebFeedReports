@@ -132,6 +132,7 @@ export const api = {
     opts: {
       top?: number;
       sourceIds?: string[];
+      topics?: string[];
       dateFrom?: string | null;
       dateTo?: string | null;
     } = {}
@@ -142,6 +143,7 @@ export const api = {
         query,
         top: opts.top ?? 10,
         source_ids: opts.sourceIds ?? [],
+        tags: opts.topics ?? [],
         date_from: opts.dateFrom ?? null,
         date_to: opts.dateTo ?? null,
       }),

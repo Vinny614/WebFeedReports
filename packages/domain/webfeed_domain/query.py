@@ -15,12 +15,16 @@ def _build_filter(
     source_ids: list[str],
     date_from: datetime | None,
     date_to: datetime | None,
+    topics: list[str] | None = None,
 ) -> str | None:
-    """Compose an OData filter from company (source_id) and date-range filters."""
+    """Compose an OData filter from company, topic and date-range filters."""
     clauses: list[str] = []
     if source_ids:
         ors = " or ".join(f"source_id eq '{s}'" for s in source_ids)
         clauses.append(f"({ors})")
+    if topics:
+        ors = " or ".join(f"t eq '{t}'" for t in topics)
+        clauses.append(f"tags/any(t: {ors})")
     if date_from:
         clauses.append(f"published_at ge {date_from.isoformat()}")
     if date_to:
@@ -39,17 +43,17 @@ def search(
     """Hybrid search: combines keyword and vector retrieval.
 
     ``source_ids`` restricts by company/source; ``date_from``/``date_to`` bound
-    ``published_at``. ``tags`` is a legacy alias treated as additional
-    source_id filters (the index has no separate tags field yet).
+    ``published_at``; ``tags`` restricts by topic against the index's ``tags``
+    collection field (matches documents carrying any of the given tags).
     """
-    src = list(dict.fromkeys([*(source_ids or []), *(tags or [])]))
+    topics = list(dict.fromkeys(tags or []))
     embedding = embed_texts([query])[0]
     vector_query = VectorizedQuery(vector=embedding, k_nearest_neighbors=top, fields="embedding")
 
     results = search_client().search(
         search_text=query,
         vector_queries=[vector_query],
-        filter=_build_filter(src, date_from, date_to),
+        filter=_build_filter(list(source_ids or []), date_from, date_to, topics),
         top=top,
     )
 

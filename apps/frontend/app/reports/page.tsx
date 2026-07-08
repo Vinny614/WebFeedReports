@@ -20,6 +20,16 @@ const COMPANY_FILTERS: { id: string; label: string }[] = [
   { id: "boeing-press", label: "Boeing" },
 ];
 
+const TOPIC_FILTERS: { id: string; label: string }[] = [
+  { id: "defence", label: "Defence" },
+  { id: "aviation-safety", label: "Aviation safety" },
+  { id: "regulation", label: "Regulation" },
+  { id: "arms-sales", label: "Arms sales" },
+  { id: "arms-transfers", label: "Arms transfers" },
+  { id: "business", label: "Business" },
+  { id: "security", label: "Security" },
+];
+
 function dayStart(d: string): string | null {
   return d ? `${d}T00:00:00Z` : null;
 }
@@ -58,6 +68,7 @@ export default function ReportsPage() {
   const [query, setQuery] = useState("");
   const [title, setTitle] = useState("");
   const [selectedSources, setSelectedSources] = useState<string[]>([]);
+  const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
@@ -150,6 +161,12 @@ export default function ReportsPage() {
     );
   }
 
+  function toggleTopic(id: string) {
+    setSelectedTopics((prev) =>
+      prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id]
+    );
+  }
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     stopPolling();
@@ -169,6 +186,7 @@ export default function ReportsPage() {
         query,
         title: title || undefined,
         source_ids: selectedSources,
+        tags: selectedTopics,
         date_from: dayStart(dateFrom),
         date_to: dayEnd(dateTo),
         template_id: selectedTemplateId === CUSTOM ? null : selectedTemplateId,
@@ -299,7 +317,7 @@ export default function ReportsPage() {
         <details className="govuk-details" open>
           <summary className="govuk-details__summary">
             <span className="govuk-details__summary-text">
-              Filters (date range &amp; companies)
+              Filters (date range, companies &amp; topics)
             </span>
           </summary>
           <div className="govuk-details__text">
@@ -352,6 +370,32 @@ export default function ReportsPage() {
                       htmlFor={`report-src-${c.id}`}
                     >
                       {c.label}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </fieldset>
+
+            <fieldset className="govuk-fieldset">
+              <legend className="govuk-fieldset__legend">
+                Restrict to topics (optional)
+              </legend>
+              <div className="govuk-checkboxes govuk-checkboxes--small app-checkbox-grid">
+                {TOPIC_FILTERS.map((t) => (
+                  <div key={t.id} className="govuk-checkboxes__item">
+                    <input
+                      className="govuk-checkboxes__input"
+                      id={`report-topic-${t.id}`}
+                      type="checkbox"
+                      checked={selectedTopics.includes(t.id)}
+                      onChange={() => toggleTopic(t.id)}
+                      disabled={busy}
+                    />
+                    <label
+                      className="govuk-label govuk-checkboxes__label"
+                      htmlFor={`report-topic-${t.id}`}
+                    >
+                      {t.label}
                     </label>
                   </div>
                 ))}
