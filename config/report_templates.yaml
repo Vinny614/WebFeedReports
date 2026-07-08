@@ -1,0 +1,65 @@
+# Report templates for the WebFeedReports report builder.
+#
+# Published to Blob Storage (report-templates/templates.yaml) at deploy time,
+# the same Option B pattern as config/sources.yaml. The API serves these to the
+# report builder UI; the worker generates each report section-by-section.
+#
+# Section styles:
+#   items     -> a list of news items (headline + source + link + short summary),
+#                matching the BAE "Weekly News" email format.
+#   narrative -> free-flowing prose paragraphs (e.g. a coverage summary).
+#
+# Retrieval for each section uses the base query + heading + guidance, so the
+# region/company is expressed in the heading and guidance rather than a filter.
+
+- id: regional-defence-weekly
+  name: Regional Defence Weekly
+  description: >-
+    Weekly round-up of defence and security coverage grouped by region, in the
+    BAE Systems weekly-news style.
+  default_query: defence and security developments
+  sections:
+    - heading: Coverage summary
+      style: narrative
+      guidance: >-
+        Write 3-4 short paragraphs summarising the week's most significant
+        defence and security themes across the Middle East, North Africa and
+        Türkiye, and what they mean for industry positioning.
+    - heading: Middle East
+      style: items
+      guidance: >-
+        Notable defence, security and procurement developments across the
+        Middle East (Gulf states, Saudi Arabia, UAE, Qatar, Iran, Iraq, Israel,
+        Jordan and Lebanon).
+    - heading: North Africa
+      style: items
+      guidance: >-
+        Defence and security developments across North Africa (Egypt, Algeria,
+        Morocco, Tunisia and Libya).
+    - heading: Türkiye
+      style: items
+      guidance: >-
+        Turkish defence industry developments, including ASELSAN, the KAAN
+        fighter programme, EDGE Group ventures, exports and partnerships.
+
+- id: company-news-roundup
+  name: Company News Roundup
+  description: >-
+    Latest press and newsroom coverage for the tracked prime contractors,
+    grouped by company.
+  default_query: defence company announcements and contracts
+  sections:
+    - heading: Coverage summary
+      style: narrative
+      guidance: >-
+        Summarise the most significant company announcements, contracts and
+        partnerships across the tracked primes this period.
+    - heading: Airbus
+      style: items
+      guidance: Airbus press releases, contracts, programmes and partnerships.
+    - heading: Boeing
+      style: items
+      guidance: Boeing news releases, defence programmes, contracts and deliveries.
+    - heading: Leonardo
+      style: items
+      guidance: Leonardo press releases, contracts, programmes and partnerships.

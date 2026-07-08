@@ -105,6 +105,20 @@ def ensure_index() -> None:
     log.info("Created search index %s", settings.search_index_name)
 
 
+def reset_index() -> None:
+    """Delete the search index (dropping all documents) and recreate it empty.
+
+    Used to purge legacy/stale data before a clean reingest.
+    """
+    settings = get_settings()
+    client = search_index_client()
+    existing = {idx.name for idx in client.list_indexes()}
+    if settings.search_index_name in existing:
+        client.delete_index(settings.search_index_name)
+        log.info("Deleted search index %s", settings.search_index_name)
+    ensure_index()
+
+
 def delete_document_chunks(document_id: str) -> int:
     """Remove all existing chunks for a document so re-ingestion stays clean."""
     client = search_client()

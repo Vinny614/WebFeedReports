@@ -1,5 +1,6 @@
-// Storage account with Blob containers (raw, reports, sources) and Tables.
-// Shared-key access is disabled — all access is via Entra ID / Managed Identity.
+// Storage account with Blob containers (raw, reports, sources, report-templates)
+// and Tables. Shared-key access is disabled — all access is via Entra ID /
+// Managed Identity.
 
 param location string
 param namePrefix string
@@ -37,6 +38,11 @@ resource reportsContainer 'Microsoft.Storage/storageAccounts/blobServices/contai
 resource sourcesContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-05-01' = {
   parent: blobService
   name: 'sources'
+}
+
+resource templatesContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-05-01' = {
+  parent: blobService
+  name: 'report-templates'
 }
 
 resource tableService 'Microsoft.Storage/storageAccounts/tableServices@2023-05-01' = {

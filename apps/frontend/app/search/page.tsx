@@ -3,18 +3,45 @@
 import { useState } from "react";
 import { api, QueryResultItem } from "@/lib/api";
 
+function dayStart(d: string): string | null {
+  return d ? `${d}T00:00:00Z` : null;
+}
+function dayEnd(d: string): string | null {
+  return d ? `${d}T23:59:59Z` : null;
+}
+
+const COMPANY_FILTERS: { id: string; label: string }[] = [
+  { id: "airbus-press", label: "Airbus" },
+  { id: "leonardo-press", label: "Leonardo" },
+  { id: "boeing-press", label: "Boeing" },
+];
+
 export default function SearchPage() {
   const [query, setQuery] = useState("");
   const [items, setItems] = useState<QueryResultItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [selectedSources, setSelectedSources] = useState<string[]>([]);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+
+  function toggleSource(id: string) {
+    setSelectedSources((prev) =>
+      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
+    );
+  }
+
   async function runSearch(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError(null);
     try {
-      const res = await api.query(query);
+      const res = await api.query(query, {
+        sourceIds: selectedSources,
+        dateFrom: dayStart(dateFrom),
+        dateTo: dayEnd(dateTo),
+      });
       setItems(res.items);
     } catch (err) {
       setError((err as Error).message);
@@ -36,13 +63,72 @@ export default function SearchPage() {
             className="govuk-input"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="e.g. Cosmos DB distributed transactions"
+            placeholder="e.g. Airbus defence contract"
           />
         </div>
+
+        <details className="govuk-details" open>
+          <summary className="govuk-details__summary">
+            <span className="govuk-details__summary-text">Filters</span>
+          </summary>
+          <div className="govuk-details__text">
+            <div className="app-filter-grid">
+              <div className="govuk-form-group">
+                <label className="govuk-label" htmlFor="search-date-from">
+                  From date
+                </label>
+                <input
+                  id="search-date-from"
+                  type="date"
+                  className="govuk-input"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                />
+              </div>
+              <div className="govuk-form-group">
+                <label className="govuk-label" htmlFor="search-date-to">
+                  To date
+                </label>
+                <input
+                  id="search-date-to"
+                  type="date"
+                  className="govuk-input"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <fieldset className="govuk-fieldset">
+              <legend className="govuk-fieldset__legend">Companies</legend>
+              <div className="govuk-checkboxes govuk-checkboxes--small app-checkbox-grid">
+                {COMPANY_FILTERS.map((c) => (
+                  <div key={c.id} className="govuk-checkboxes__item">
+                    <input
+                      className="govuk-checkboxes__input"
+                      id={`src-${c.id}`}
+                      type="checkbox"
+                      checked={selectedSources.includes(c.id)}
+                      onChange={() => toggleSource(c.id)}
+                    />
+                    <label
+                      className="govuk-label govuk-checkboxes__label"
+                      htmlFor={`src-${c.id}`}
+                    >
+                      {c.label}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </fieldset>
+          </div>
+        </details>
+
         <button type="submit" className="govuk-button" disabled={loading}>
           {loading ? "Searching…" : "Search"}
         </button>
       </form>
+
 
       {loading && (
         <div className="app-status" role="status">

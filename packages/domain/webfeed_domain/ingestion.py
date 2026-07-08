@@ -7,10 +7,12 @@ from __future__ import annotations
 
 import hashlib
 from datetime import datetime, timezone
+from urllib.parse import urljoin, urlparse
 
 import feedparser
 import httpx
 from azure.core.exceptions import ResourceExistsError
+from bs4 import BeautifulSoup
 from tenacity import retry, stop_after_attempt, wait_exponential
 from webfeed_shared.models import Document, Source, SourceType
 
@@ -22,6 +24,13 @@ from webfeed_platform.observability import get_logger
 log = get_logger(__name__)
 
 _USER_AGENT = "WebFeedReports/0.1 (+https://github.com/Vinny614/WebFeedReports)"
+
+# File extensions that are never article pages.
+_ASSET_SUFFIXES = (
+    ".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg", ".ico",
+    ".css", ".js", ".pdf", ".zip", ".xml", ".json", ".mp4", ".mp3",
+    ".woff", ".woff2", ".ttf",
+)
 
 
 @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, max=10))
@@ -99,10 +108,72 @@ def _ingest_rss(source: Source) -> list[Document]:
     return docs
 
 
+def _discover_article_links(base_url: str, html: str, max_pages: int) -> list[tuple[str, str | None]]:
+    """Find per-article links on a server-rendered listing page.
+
+    Returns ``(url, title)`` pairs for same-host anchors that live *under* the
+    listing path and are strictly deeper than it (i.e. article detail pages),
+    skipping asset files and the listing/pagination page itself. Order is
+    preserved and duplicates are removed. Capped at ``max_pages``.
+    """
+    base = urlparse(base_url)
+    base_path = base.path.rstrip("/")
+    base_depth = len([p for p in base_path.split("/") if p])
+
+    soup = BeautifulSoup(html, "lxml")
+    seen: set[str] = set()
+    results: list[tuple[str, str | None]] = []
+    for anchor in soup.find_all("a", href=True):
+        href = anchor["href"].strip()
+        if not href or href.startswith(("#", "mailto:", "tel:", "javascript:")):
+            continue
+        absolute = urljoin(base_url, href)
+        parsed = urlparse(absolute)
+        if parsed.scheme not in ("http", "https") or parsed.netloc != base.netloc:
+            continue
+        path = parsed.path.rstrip("/")
+        if path.lower().endswith(_ASSET_SUFFIXES):
+            continue
+        # Must be under the listing path and strictly deeper (a detail page).
+        if not path.startswith(base_path + "/"):
+            continue
+        if len([p for p in path.split("/") if p]) <= base_depth:
+            continue
+        clean = f"{parsed.scheme}://{parsed.netloc}{path}"
+        if clean in seen:
+            continue
+        seen.add(clean)
+        title = anchor.get("title") or normalize_text(anchor.get_text()) or None
+        results.append((clean, title))
+        if len(results) >= max_pages:
+            break
+    return results
+
+
 def _ingest_web(source: Source) -> list[Document]:
     raw = _fetch(str(source.url))
+    raw_path = _store_raw(source.id, "listing.html", raw)
+
+    if source.crawl and source.crawl.depth >= 1:
+        max_pages = source.crawl.max_pages or 25
+        html = raw.decode("utf-8", errors="ignore")
+        links = _discover_article_links(str(source.url), html, max_pages)
+        if links:
+            docs = [
+                Document(
+                    id=hashlib.sha1(url.encode("utf-8")).hexdigest(),
+                    source_id=source.id,
+                    url=url,
+                    title=title,
+                    raw_blob_path=raw_path,
+                )
+                for url, title in links
+            ]
+            log.info("WEB %s -> %d documents (crawled)", source.id, len(docs))
+            return docs
+        log.info("WEB %s -> crawl found no links, falling back to snapshot", source.id)
+
     doc_id = hashlib.sha1(str(source.url).encode("utf-8")).hexdigest()
-    raw_path = _store_raw(source.id, f"{doc_id}.html", raw)
     log.info("WEB %s -> 1 document", source.id)
     return [
         Document(

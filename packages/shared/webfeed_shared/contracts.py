@@ -30,6 +30,7 @@ class IngestJob(BaseModel):
     type: JobType = JobType.INGEST
     job_id: str
     source_ids: list[str] = Field(default_factory=list)  # empty = all enabled
+    reset: bool = False  # when true, purge + recreate the index before ingest
     requested_at: datetime = Field(default_factory=_utcnow)
 
 
@@ -41,6 +42,12 @@ class ReportJob(BaseModel):
     query: str
     title: str | None = None
     filters: dict[str, str] = Field(default_factory=dict)
+    # Optional template-driven generation. template_id selects a seeded template;
+    # sections carries the (possibly user-edited) headings as plain dicts to avoid
+    # a circular import with api_models. The worker rebuilds them via
+    # ReportTemplateSection.model_validate.
+    template_id: str | None = None
+    sections: list[dict] | None = None
     requested_at: datetime = Field(default_factory=_utcnow)
 
 

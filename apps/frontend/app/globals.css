@@ -532,3 +532,76 @@ button:focus {
 .app-preserve-whitespace {
   white-space: pre-wrap;
 }
+
+/* Report builder: editable heading rows */
+.app-heading-row {
+  border: 1px solid var(--govuk-grey-2, #b1b4b6);
+  border-radius: 4px;
+  padding: 15px;
+  margin-bottom: 15px;
+}
+
+.app-heading-row__main {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.app-heading-row__main .govuk-input {
+  flex: 1 1 auto;
+  margin-bottom: 0;
+}
+
+.app-heading-row__main .govuk-select {
+  flex: 0 0 auto;
+  margin-bottom: 0;
+}
+
+.app-heading-row__guidance {
+  margin-bottom: 10px !important;
+}
+
+.app-heading-row__controls {
+  display: flex;
+  gap: 10px;
+}
+
+.app-heading-row__controls .govuk-button {
+  margin-bottom: 0;
+}
+
+/* Filter controls: date range + company checkbox grid */
+.app-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 15px;
+}
+
+.app-checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0 15px;
+}
+
+/* Report output: BAE-style news item list */
+.app-report-items {
+  list-style: none;
+  margin: 0 0 20px 0;
+  padding: 0;
+}
+
+.app-report-item {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--govuk-grey-3, #f3f2f1);
+}
+
+.app-report-item__title {
+  font-weight: 700;
+  font-size: 1.1875rem;
+}
+
+.app-report-item__meta {
+  margin: 4px 0 6px 0;
+  color: var(--govuk-grey-1);
+}
+

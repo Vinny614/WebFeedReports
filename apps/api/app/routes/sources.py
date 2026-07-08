@@ -25,9 +25,17 @@ def list_sources() -> list[Source]:
 
 
 @router.post("/refresh", response_model=JobSubmittedResponse)
-def refresh_sources(source_ids: list[str] | None = None) -> JobSubmittedResponse:
-    """Trigger a manual ingestion re-run for all or selected sources."""
+def refresh_sources(
+    source_ids: list[str] | None = None, reset: bool = False
+) -> JobSubmittedResponse:
+    """Trigger a manual ingestion re-run for all or selected sources.
+
+    When ``reset`` is true the worker purges and recreates the search index
+    before ingesting, clearing any legacy/stale documents.
+    """
     job_id = str(uuid.uuid4())
     jobs_domain.create_job_record(job_id, JobType.INGEST)
-    jobs_domain.enqueue_ingest(IngestJob(job_id=job_id, source_ids=source_ids or []))
+    jobs_domain.enqueue_ingest(
+        IngestJob(job_id=job_id, source_ids=source_ids or [], reset=reset)
+    )
     return JobSubmittedResponse(job_id=job_id, type=JobType.INGEST, status="queued")

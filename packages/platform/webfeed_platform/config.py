@@ -24,6 +24,9 @@ class Settings(BaseSettings):
     reports_container: str = "reports"
     sources_container: str = "sources"
     sources_blob_name: str = "sources.yaml"
+    templates_container: str = "report-templates"
+    templates_blob_name: str = "templates.yaml"
+    recent_headings_blob_name: str = "recent-headings.json"
     jobs_table: str = "jobs"
     sources_table: str = "sources"
 

@@ -17,11 +17,13 @@
 #     schedule: cron expression for polling cadence (optional; falls back to defaults)
 #     tags:     list of free-form labels (optional)
 #     crawl:    web-only options
-#       depth:  link-follow depth, 0 = only the given page (default 0)
-#       max_pages: safety cap on pages per run (optional)
+#       depth:  link-follow depth, 0 = only the given page (default 0),
+#               >= 1 = discover per-article links on the page and ingest each
+#       max_pages: safety cap on articles discovered per run (optional)
 #
-# NOTE: The web ingester snapshots a SINGLE page (crawl.depth/max_pages are not
-# yet honoured). Prefer "rss" where a real feed exists.
+# NOTE: Prefer "rss" where a real feed exists (already per-article). For a
+# server-rendered listing page with no feed, set crawl.depth >= 1 to ingest
+# one Document per linked article instead of a single page snapshot.
 
 version: 1
 
@@ -35,6 +37,9 @@ sources:
     type: web
     url: https://www.airbus.com/en/newsroom/press-releases
     tags: [airbus, defence, supplier, business]
+    crawl:
+      depth: 1
+      max_pages: 20
 
   - id: boeing-press
     type: rss
@@ -42,8 +47,8 @@ sources:
     tags: [boeing, defence, supplier, business]
 
   - id: leonardo-press
-    type: web
-    url: https://www.leonardo.com/en/media-hub/press-releases
+    type: rss
+    url: https://www.leonardo.com/en/rss/-/rss/66667/16624040
     tags: [leonardo, defence, supplier, business]
 
   # ── Aviation safety & regulators ───────────────────────────────────

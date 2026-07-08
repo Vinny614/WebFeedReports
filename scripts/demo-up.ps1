@@ -146,6 +146,20 @@ if (-not $uploaded) {
   throw "Could not upload sources.yaml (RBAC may still be propagating). Re-run the script."
 }
 
+# Publish report templates alongside sources (same container is provisioned by Bicep).
+az storage blob upload `
+  --account-name $storageName `
+  --auth-mode login `
+  --container-name report-templates `
+  --name templates.yaml `
+  --file (Join-Path $repoRoot "config/report_templates.yaml") `
+  --overwrite --output none 2>$null
+if ($LASTEXITCODE -eq 0) {
+  Write-Host "      published report templates." -ForegroundColor Green
+} else {
+  Write-Host "      WARNING: could not upload report_templates.yaml." -ForegroundColor Red
+}
+
 # --- 6. Initial ingest -------------------------------------------------------
 if ($SkipIngest) {
   Write-Host "[6/6] Skipping initial ingest (-SkipIngest)." -ForegroundColor Yellow

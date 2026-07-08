@@ -2,14 +2,26 @@
 
 from __future__ import annotations
 
+from datetime import datetime
+
+from webfeed_shared.api_models import (
+    ReportTemplate,
+    ReportTemplateSection,
+    SearchFilters,
+)
 from webfeed_shared.contracts import IngestJob, JobStatus, JobType, ReportJob
 
 from webfeed_platform.observability import get_logger
 from webfeed_domain import jobs as jobs_domain
 from webfeed_domain import sources as sources_domain
-from webfeed_domain.indexing import build_chunks, index_chunks
+from webfeed_domain import templates as templates_domain
+from webfeed_domain.indexing import build_chunks, index_chunks, reset_index
 from webfeed_domain.ingestion import extract_document_text, ingest_source
-from webfeed_domain.reporting import generate_report, persist_report
+from webfeed_domain.reporting import (
+    generate_report,
+    generate_templated_report,
+    persist_report,
+)
 
 log = get_logger("webfeed-worker.handlers")
 
@@ -18,6 +30,15 @@ def handle_ingest(job: IngestJob) -> None:
     """Fetch sources, extract content, chunk, embed and index."""
     jobs_domain.update_job_status(job.job_id, JobType.INGEST, JobStatus.RUNNING)
     try:
+        # Optionally purge and recreate the index to clear legacy/stale data
+        # before a clean reingest.
+        if job.reset:
+            try:
+                reset_index()
+                log.info("Ingest job %s reset the search index", job.job_id)
+            except Exception as exc:  # noqa: BLE001
+                log.warning("Index reset skipped: %s", exc)
+
         # Re-seed the registry from sources.yaml in Blob so a manual refresh
         # always reflects the source-of-truth file, even if the worker started
         # before the blob was published.
@@ -72,12 +93,53 @@ def handle_ingest(job: IngestJob) -> None:
         raise
 
 
+def _resolve_template(job: ReportJob) -> ReportTemplate | None:
+    """Build a template from custom sections, or load a seeded one by id."""
+    if job.sections:
+        return ReportTemplate(
+            id=job.template_id or "custom",
+            name=job.title or "Custom report",
+            sections=[ReportTemplateSection.model_validate(s) for s in job.sections],
+        )
+    if job.template_id:
+        return templates_domain.get_template(job.template_id)
+    return None
+
+
+def _parse_dt(value: str | None) -> datetime | None:
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(value)
+    except ValueError:
+        return None
+
+
+def _build_search_filters(job: ReportJob) -> SearchFilters:
+    """Reconstruct company + date-range filters from the job's filters dict."""
+    f = job.filters
+    source_ids = [s for s in (f.get("source_ids") or "").split(",") if s]
+    # Legacy report-level "tags" were source-id restrictions; keep honouring them.
+    source_ids += [t for t in (f.get("tags") or "").split(",") if t]
+    return SearchFilters(
+        source_ids=list(dict.fromkeys(source_ids)),
+        date_from=_parse_dt(f.get("date_from")),
+        date_to=_parse_dt(f.get("date_to")),
+    )
+
+
 def handle_report(job: ReportJob) -> None:
     """Retrieve relevant content and generate a structured briefing report."""
     jobs_domain.update_job_status(job.job_id, JobType.REPORT, JobStatus.RUNNING)
     try:
-        tags = [t for t in (job.filters.get("tags") or "").split(",") if t]
-        report = generate_report(job.query, job.title, tags)
+        filters = _build_search_filters(job)
+        template = _resolve_template(job)
+        if template is not None:
+            report = generate_templated_report(
+                job.query, job.title, template, filters
+            )
+        else:
+            report = generate_report(job.query, job.title, filters)
         blob_path = persist_report(report)
         jobs_domain.update_job_status(
             job.job_id, JobType.REPORT, JobStatus.SUCCEEDED, result_ref=report.report_id

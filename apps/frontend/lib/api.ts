@@ -20,6 +20,7 @@ export interface QueryResultItem {
   score: number;
   title?: string | null;
   url?: string | null;
+  published_at?: string | null;
   snippet: string;
 }
 
@@ -46,9 +47,41 @@ export interface JobStatusResponse {
   result_ref?: string | null;
 }
 
+export interface ReportItem {
+  title: string;
+  url?: string | null;
+  source?: string | null;
+  published_at?: string | null;
+  summary: string;
+}
+
 export interface ReportSection {
   heading: string;
+  style: "narrative" | "items";
   content: string;
+  items: ReportItem[];
+}
+
+export interface ReportTemplateSection {
+  heading: string;
+  style: "narrative" | "items";
+  guidance?: string | null;
+  query?: string | null;
+  tags: string[];
+}
+
+export interface ReportTemplate {
+  id: string;
+  name: string;
+  description?: string | null;
+  default_query?: string | null;
+  sections: ReportTemplateSection[];
+}
+
+export interface RecentHeadingSet {
+  name?: string | null;
+  sections: ReportTemplateSection[];
+  used_at: string;
 }
 
 export interface ReportCitation {
@@ -94,16 +127,51 @@ export const api = {
       method: "POST",
       body: JSON.stringify(sourceIds ?? null),
     }),
-  query: (query: string, top = 10, tags: string[] = []) =>
+  query: (
+    query: string,
+    opts: {
+      top?: number;
+      sourceIds?: string[];
+      dateFrom?: string | null;
+      dateTo?: string | null;
+    } = {}
+  ) =>
     http<QueryResponse>("/query", {
       method: "POST",
-      body: JSON.stringify({ query, top, tags }),
+      body: JSON.stringify({
+        query,
+        top: opts.top ?? 10,
+        source_ids: opts.sourceIds ?? [],
+        date_from: opts.dateFrom ?? null,
+        date_to: opts.dateTo ?? null,
+      }),
     }),
-  submitReport: (query: string, title?: string, tags: string[] = []) =>
+  submitReport: (payload: {
+    query: string;
+    title?: string;
+    tags?: string[];
+    source_ids?: string[];
+    date_from?: string | null;
+    date_to?: string | null;
+    template_id?: string | null;
+    sections?: ReportTemplateSection[] | null;
+  }) =>
     http<JobSubmitted>("/reports", {
       method: "POST",
-      body: JSON.stringify({ query, title, tags }),
+      body: JSON.stringify({
+        query: payload.query,
+        title: payload.title,
+        tags: payload.tags ?? [],
+        source_ids: payload.source_ids ?? [],
+        date_from: payload.date_from ?? null,
+        date_to: payload.date_to ?? null,
+        template_id: payload.template_id ?? null,
+        sections: payload.sections ?? null,
+      }),
     }),
+  listReportTemplates: () => http<ReportTemplate[]>("/reports/templates"),
+  listRecentHeadings: () =>
+    http<RecentHeadingSet[]>("/reports/recent-headings"),
   getReportJob: (jobId: string) =>
     http<JobStatusResponse>(`/jobs/report/${jobId}`),
   getReport: (reportId: string) =>

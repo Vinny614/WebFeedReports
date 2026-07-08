@@ -8,9 +8,11 @@ source of truth.
 
 from __future__ import annotations
 
+import json
+
 import yaml
 from azure.core.exceptions import ResourceExistsError
-from webfeed_shared.models import Source
+from webfeed_shared.models import CrawlOptions, Source
 
 from webfeed_platform.clients import blob_service_client, table_service_client
 from webfeed_platform.config import get_settings
@@ -58,6 +60,7 @@ def seed_registry(sources: list[Source]) -> int:
             "enabled": source.enabled,
             "schedule": source.schedule or "",
             "tags": ",".join(source.tags),
+            "crawl": source.crawl.model_dump_json() if source.crawl else "",
         }
         table.upsert_entity(entity)
         count += 1
@@ -74,6 +77,8 @@ def list_enabled_sources() -> list[Source]:
         if not e.get("enabled", True):
             continue
         tags = [t for t in (e.get("tags") or "").split(",") if t]
+        crawl_raw = e.get("crawl") or ""
+        crawl = CrawlOptions.model_validate(json.loads(crawl_raw)) if crawl_raw else None
         result.append(
             Source(
                 id=e["RowKey"],
@@ -82,6 +87,7 @@ def list_enabled_sources() -> list[Source]:
                 enabled=e.get("enabled", True),
                 schedule=e.get("schedule") or None,
                 tags=tags,
+                crawl=crawl,
             )
         )
     return result
