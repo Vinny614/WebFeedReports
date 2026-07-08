@@ -214,8 +214,3 @@ def extract_document_content(document: Document) -> tuple[str, datetime | None]:
             return text, None
     html = fetch_document_html(document)
     return normalize_text(extract_from_html(html)), extract_date_from_html(html)
-
-
-def extract_document_text(document: Document) -> str:
-    """Return clean text for a document (date discarded)."""
-    return extract_document_content(document)[0]

@@ -20,10 +20,8 @@ const TOPIC_FILTERS: { id: string; label: string }[] = [
   { id: "defence", label: "Defence" },
   { id: "aviation-safety", label: "Aviation safety" },
   { id: "regulation", label: "Regulation" },
-  { id: "arms-sales", label: "Arms sales" },
   { id: "arms-transfers", label: "Arms transfers" },
   { id: "business", label: "Business" },
-  { id: "security", label: "Security" },
 ];
 
 export default function SearchPage() {

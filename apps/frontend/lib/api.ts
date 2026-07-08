@@ -122,11 +122,6 @@ async function http<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const api = {
   listSources: () => http<Source[]>("/sources"),
-  refreshSources: (sourceIds?: string[]) =>
-    http<JobSubmitted>("/sources/refresh", {
-      method: "POST",
-      body: JSON.stringify(sourceIds ?? null),
-    }),
   query: (
     query: string,
     opts: {

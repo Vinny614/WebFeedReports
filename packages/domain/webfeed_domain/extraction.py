@@ -7,15 +7,10 @@ controlled.
 
 from __future__ import annotations
 
-import hashlib
 from datetime import datetime, timezone
 
 import trafilatura
 from bs4 import BeautifulSoup
-
-
-def content_hash(text: str) -> str:
-    return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
 def extract_from_html(html: str) -> str:
