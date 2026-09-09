@@ -11,7 +11,7 @@ from fastapi import FastAPI
 
 from webfeed_platform.observability import configure_observability
 
-from app.routes import health, jobs, query, reports, sources
+from app.routes import chat, health, jobs, query, reports, sources
 
 configure_observability("webfeed-api")
 
@@ -24,5 +24,6 @@ app = FastAPI(
 app.include_router(health.router)
 app.include_router(sources.router)
 app.include_router(query.router)
+app.include_router(chat.router)
 app.include_router(reports.router)
 app.include_router(jobs.router)

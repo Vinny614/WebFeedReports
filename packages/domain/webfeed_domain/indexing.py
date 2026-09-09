@@ -8,6 +8,10 @@ from azure.search.documents.indexes.models import (
     SearchField,
     SearchFieldDataType,
     SearchIndex,
+    SemanticConfiguration,
+    SemanticField,
+    SemanticPrioritizedFields,
+    SemanticSearch,
     SimpleField,
     VectorSearch,
     VectorSearchProfile,
@@ -48,6 +52,22 @@ def embed_texts(texts: list[str]) -> list[list[float]]:
     return [d.embedding for d in resp.data]
 
 
+def _semantic_search(config_name: str) -> SemanticSearch:
+    """Semantic (L2) reranker over title + chunk text."""
+    return SemanticSearch(
+        default_configuration_name=config_name,
+        configurations=[
+            SemanticConfiguration(
+                name=config_name,
+                prioritized_fields=SemanticPrioritizedFields(
+                    title_field=SemanticField(field_name="title"),
+                    content_fields=[SemanticField(field_name="text")],
+                ),
+            )
+        ],
+    )
+
+
 def build_chunks(document: Document, text: str, tags: list[str] | None = None) -> list[Chunk]:
     parts = chunk_text(text)
     if not parts:
@@ -78,6 +98,7 @@ def ensure_index() -> None:
     client = search_index_client()
     existing = {idx.name for idx in client.list_indexes()}
     if settings.search_index_name in existing:
+        _ensure_semantic_config(client, settings)
         return
 
     fields = [
@@ -107,9 +128,25 @@ def ensure_index() -> None:
         algorithms=[HnswAlgorithmConfiguration(name="default-hnsw")],
         profiles=[VectorSearchProfile(name="default-profile", algorithm_configuration_name="default-hnsw")],
     )
-    index = SearchIndex(name=settings.search_index_name, fields=fields, vector_search=vector_search)
+    index = SearchIndex(
+        name=settings.search_index_name,
+        fields=fields,
+        vector_search=vector_search,
+        semantic_search=_semantic_search(settings.search_semantic_config),
+    )
     client.create_index(index)
     log.info("Created search index %s", settings.search_index_name)
+
+
+def _ensure_semantic_config(client: object, settings: object) -> None:
+    """Patch an existing index to add the semantic config (no reindex needed)."""
+    index = client.get_index(settings.search_index_name)
+    existing = index.semantic_search.configurations if index.semantic_search else []
+    if any(c.name == settings.search_semantic_config for c in existing or []):
+        return
+    index.semantic_search = _semantic_search(settings.search_semantic_config)
+    client.create_or_update_index(index)
+    log.info("Added semantic configuration to index %s", settings.search_index_name)
 
 
 def reset_index() -> None:

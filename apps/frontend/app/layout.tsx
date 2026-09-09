@@ -29,6 +29,9 @@ export default function RootLayout({
               <a href="/search" className="govuk-header__link">
                 Search
               </a>
+              <a href="/chat" className="govuk-header__link">
+                Chat
+              </a>
               <a href="/reports" className="govuk-header__link">
                 Reports
               </a>

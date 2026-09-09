@@ -29,6 +29,17 @@ export interface QueryResponse {
   items: QueryResultItem[];
 }
 
+export interface ChatMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
+export interface ChatSource {
+  source_id: string;
+  title?: string | null;
+  url?: string | null;
+}
+
 export interface JobSubmitted {
   job_id: string;
   type: string;
@@ -122,6 +133,27 @@ async function http<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const api = {
   listSources: () => http<Source[]>("/sources"),
+  chatStream: (
+    messages: ChatMessage[],
+    opts: {
+      sourceIds?: string[];
+      topics?: string[];
+      dateFrom?: string | null;
+      dateTo?: string | null;
+    } = {}
+  ) =>
+    fetch(`${baseUrl()}/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      cache: "no-store",
+      body: JSON.stringify({
+        messages,
+        source_ids: opts.sourceIds ?? [],
+        tags: opts.topics ?? [],
+        date_from: opts.dateFrom ?? null,
+        date_to: opts.dateTo ?? null,
+      }),
+    }),
   query: (
     query: string,
     opts: {

@@ -33,6 +33,10 @@ class Settings(BaseSettings):
     # Azure AI Search
     search_endpoint: str = ""
     search_index_name: str = "webfeed-chunks"
+    # Semantic ranker (L2) configuration and the minimum reranker score (0-4)
+    # a chunk must clear to be returned, which suppresses vector-only near-misses.
+    search_semantic_config: str = "webfeed-semantic"
+    min_reranker_score: float = 1.5
 
     # Azure OpenAI
     openai_endpoint: str = ""

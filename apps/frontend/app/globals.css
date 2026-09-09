@@ -605,3 +605,63 @@ button:focus {
   color: var(--govuk-grey-1);
 }
 
+/* Chat: conversation transcript + composer */
+.app-chat {
+  max-height: 55vh;
+  overflow-y: auto;
+  padding: 15px;
+  margin-bottom: 15px;
+  border: 1px solid var(--govuk-grey-2, #b1b4b6);
+  border-radius: 4px;
+  background: var(--govuk-grey-3, #f3f2f1);
+}
+
+.app-chat__turn {
+  margin-bottom: 15px;
+}
+
+.app-chat__turn:last-child {
+  margin-bottom: 0;
+}
+
+.app-chat__role {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--govuk-grey-1);
+  margin-bottom: 4px;
+}
+
+.app-chat__bubble {
+  white-space: pre-wrap;
+  padding: 10px 12px;
+  border-radius: 4px;
+  background: #ffffff;
+  border: 1px solid var(--govuk-grey-2, #b1b4b6);
+}
+
+.app-chat__turn--user .app-chat__bubble {
+  background: #d2e2f1;
+  border-color: #b3cbe0;
+}
+
+.app-chat__sources {
+  margin-top: 8px;
+}
+
+.app-chat__form {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+.app-chat__form .govuk-form-group {
+  flex: 1 1 auto;
+}
+
+.app-chat__form .govuk-button {
+  flex: 0 0 auto;
+  margin-bottom: 0;
+}
+
+

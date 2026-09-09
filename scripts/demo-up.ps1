@@ -23,6 +23,7 @@
 #>
 param(
   [string]$ResourceGroup = "rg-webscrape",
+  # Image tag prefix; a build timestamp is appended so each run rolls a new revision.
   [string]$Tag = "demo",
   [string]$ParamFile = "infra/main.bicepparam",
   [switch]$SkipIngest
@@ -44,16 +45,21 @@ if (-not $namePrefix -or -not $location) {
 $acrName = ($namePrefix + "acr").ToLower().Replace("-", "")
 $loginServer = "$acrName.azurecr.io"
 
-$apiImage = "$loginServer/webfeed-api:$Tag"
-$workerImage = "$loginServer/webfeed-worker:$Tag"
-$frontendImage = "$loginServer/webfeed-frontend:$Tag"
+# Unique per-run image tag: a static tag makes the Bicep image param unchanged,
+# so Container Apps sees no template change and keeps the previously-pulled
+# image. Appending a build stamp guarantees a new revision every deploy.
+$imageTag = "$Tag-" + (Get-Date -Format 'yyyyMMddHHmmss')
+
+$apiImage = "$loginServer/webfeed-api:$imageTag"
+$workerImage = "$loginServer/webfeed-worker:$imageTag"
+$frontendImage = "$loginServer/webfeed-frontend:$imageTag"
 
 Write-Host "=== WebFeedReports demo: UP ===" -ForegroundColor Cyan
 Write-Host "  Resource group : $ResourceGroup"
 Write-Host "  Name prefix    : $namePrefix"
 Write-Host "  Location       : $location"
 Write-Host "  Registry       : $loginServer"
-Write-Host "  Image tag      : $Tag"
+Write-Host "  Image tag      : $imageTag"
 Write-Host ""
 
 # --- 1. Resource group -------------------------------------------------------
@@ -74,11 +80,11 @@ if (-not $acrExists) {
 # state, then verify the tag exists.
 function Build-Image {
   param([string]$Repo, [string]$Dockerfile)
-  Write-Host "      building $Repo`:$Tag ..."
+  Write-Host "      building $Repo`:$imageTag ..."
 
   # Don't let a non-zero exit from the crashed log streamer abort the script.
   $PSNativeCommandUseErrorActionPreference = $false
-  az acr build --registry $acrName --image "$Repo`:$Tag" --file (Join-Path $repoRoot $Dockerfile) $repoRoot *> $null
+  az acr build --registry $acrName --image "$Repo`:$imageTag" --file (Join-Path $repoRoot $Dockerfile) $repoRoot *> $null
 
   # Wait for the most recent ACR run (this build) to reach a terminal state.
   $status = $null
@@ -88,12 +94,12 @@ function Build-Image {
     if ($status -in @("Succeeded", "Failed", "Canceled", "Error", "Timeout")) { break }
   }
   if ($status -ne "Succeeded") {
-    throw "ACR build for $Repo`:$Tag did not succeed (status: $status). Check 'az acr task list-runs --registry $acrName'."
+    throw "ACR build for $Repo`:$imageTag did not succeed (status: $status). Check 'az acr task list-runs --registry $acrName'."
   }
 
   $tags = az acr repository show-tags --name $acrName --repository $Repo -o tsv 2>$null
-  if ($tags -notcontains $Tag) {
-    throw "Image $Repo`:$Tag was not pushed despite a successful run."
+  if ($tags -notcontains $imageTag) {
+    throw "Image $Repo`:$imageTag was not pushed despite a successful run."
   }
 }
 

@@ -43,6 +43,21 @@ class QueryResultItem(BaseModel):
     snippet: str
 
 
+class ChatMessage(BaseModel):
+    role: Literal["user", "assistant"] = "user"
+    content: str
+
+
+class ChatRequest(BaseModel):
+    """Multi-turn conversation plus retrieval filters for grounded chat."""
+
+    messages: list[ChatMessage] = Field(default_factory=list)
+    source_ids: list[str] = Field(default_factory=list)
+    tags: list[str] = Field(default_factory=list)
+    date_from: datetime | None = None
+    date_to: datetime | None = None
+
+
 class QueryResponse(BaseModel):
     query: str
     items: list[QueryResultItem]

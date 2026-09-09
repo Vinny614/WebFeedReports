@@ -8,6 +8,7 @@ from azure.search.documents.models import VectorizedQuery
 from webfeed_shared.api_models import QueryResultItem
 
 from webfeed_platform.clients import search_client
+from webfeed_platform.config import get_settings
 from webfeed_domain.indexing import embed_texts
 
 
@@ -47,29 +48,42 @@ def search(
     collection field (matches documents carrying any of the given tags).
     """
     topics = list(dict.fromkeys(tags or []))
+    settings = get_settings()
     embedding = embed_texts([query])[0]
-    vector_query = VectorizedQuery(vector=embedding, k_nearest_neighbors=top, fields="embedding")
+    # Over-fetch candidates so the reranker has room to promote true matches
+    # before we trim to the caller's requested ``top``.
+    candidate_k = max(top * 4, 50)
+    vector_query = VectorizedQuery(
+        vector=embedding, k_nearest_neighbors=candidate_k, fields="embedding"
+    )
 
     results = search_client().search(
         search_text=query,
         vector_queries=[vector_query],
         filter=_build_filter(list(source_ids or []), date_from, date_to, topics),
-        top=top,
+        query_type="semantic",
+        semantic_configuration_name=settings.search_semantic_config,
+        top=max(top * 3, 30),
     )
 
     items: list[QueryResultItem] = []
     for r in results:
+        reranker = r.get("@search.reranker_score")
+        # Drop weak vector-only near-misses; keep everything when the service
+        # did not return a reranker score (semantic ranking unavailable).
+        if reranker is not None and reranker < settings.min_reranker_score:
+            continue
         text = r.get("text", "")
         items.append(
             QueryResultItem(
                 chunk_id=r["id"],
                 document_id=r.get("document_id", ""),
                 source_id=r.get("source_id", ""),
-                score=r.get("@search.score", 0.0),
+                score=reranker if reranker is not None else r.get("@search.score", 0.0),
                 title=r.get("title") or None,
                 url=r.get("url") or None,
                 published_at=r.get("published_at") or None,
                 snippet=text[:400],
             )
         )
-    return items
+    return items[:top]

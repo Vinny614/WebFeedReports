@@ -20,11 +20,13 @@ async function proxy(req: NextRequest, path: string[]): Promise<Response> {
   }
 
   const res = await fetch(target, init);
-  const body = await res.text();
-  return new Response(body, {
+  // Stream the body straight through so Server-Sent Events (e.g. /chat) are not
+  // buffered; this also works fine for regular JSON responses.
+  return new Response(res.body, {
     status: res.status,
     headers: {
       "Content-Type": res.headers.get("content-type") ?? "application/json",
+      "Cache-Control": "no-cache",
     },
   });
 }
