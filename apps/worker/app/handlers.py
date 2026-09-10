@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
+from typing import Any
+from urllib.parse import urlparse
 
 from webfeed_shared.api_models import (
     ReportTemplate,
@@ -14,6 +16,7 @@ from webfeed_shared.contracts import IngestJob, JobStatus, JobType, ReportJob
 from webfeed_platform.observability import get_logger
 from webfeed_domain import jobs as jobs_domain
 from webfeed_domain import sources as sources_domain
+from webfeed_domain import source_health as source_health_domain
 from webfeed_domain import templates as templates_domain
 from webfeed_domain.indexing import build_chunks, index_chunks, reset_index
 from webfeed_domain.ingestion import extract_document_content, ingest_source
@@ -24,6 +27,14 @@ from webfeed_domain.reporting import (
 )
 
 log = get_logger("webfeed-worker.handlers")
+
+
+def _record_health(source_id: str, **values: Any) -> None:
+    """Best-effort health persistence must never fail an ingest job."""
+    try:
+        source_health_domain.record_source_health(source_id, **values)
+    except Exception as exc:  # noqa: BLE001
+        log.warning("Could not persist health for source %s: %s", source_id, exc)
 
 
 def handle_ingest(job: IngestJob) -> None:
@@ -64,22 +75,69 @@ def handle_ingest(job: IngestJob) -> None:
             except Exception as exc:  # noqa: BLE001
                 failed_sources += 1
                 log.warning("Skipping source %s: %s", source.id, exc)
+                _record_health(source.id, status="failed", error=str(exc))
                 continue
+            source_chunks = 0
+            indexed_documents = 0
+            source_failed_docs = 0
+            warnings: list[str] = []
+            extracted_texts: list[str] = []
+            if len(documents) < source.min_documents:
+                warnings.append("too_few_documents")
+            if (
+                source.expected_host
+                and urlparse(str(source.url)).hostname != source.expected_host
+            ):
+                warnings.append("unexpected_host")
             for doc in documents:
                 # Likewise, a single item whose article link fails to fetch or
                 # extract is skipped rather than failing the entire job.
                 try:
-                    text, extracted_date = extract_document_content(doc)
+                    text, extracted_date = extract_document_content(doc, source)
                     # Crawled web pages have no feed date; derive it from the
                     # article's own metadata so date filtering works for them.
                     if extracted_date and doc.published_at is None:
                         doc.published_at = extracted_date
+                    extracted_texts.append(text)
+                    if len(text) < source.min_text_chars:
+                        warnings.append("short_content")
                     chunks = build_chunks(doc, text, tags=source.tags)
-                    total_chunks += index_chunks(chunks)
+                    indexed = index_chunks(chunks)
+                    source_chunks += indexed
+                    total_chunks += indexed
+                    if indexed:
+                        indexed_documents += 1
                 except Exception as exc:  # noqa: BLE001
                     failed_docs += 1
+                    source_failed_docs += 1
                     log.warning("Skipping document %s (%s): %s", doc.id, doc.url, exc)
                     continue
+
+            if documents and indexed_documents == 0:
+                warnings.append("no_indexed_documents")
+            if source_failed_docs:
+                warnings.append("documents_skipped")
+            if source.expected_text and not any(
+                source.expected_text.casefold() in text.casefold() for text in extracted_texts
+            ):
+                warnings.append("expected_text_missing")
+            newest = max(
+                (doc.published_at for doc in documents if doc.published_at),
+                default=None,
+            )
+            if newest and source.max_age_days is not None:
+                age = datetime.now(timezone.utc) - newest.astimezone(timezone.utc)
+                if age.days > source.max_age_days:
+                    warnings.append("stale_content")
+            _record_health(
+                source.id,
+                status="degraded" if warnings else "healthy",
+                document_count=len(documents),
+                indexed_document_count=indexed_documents,
+                chunk_count=source_chunks,
+                newest_published_at=newest,
+                warnings=warnings,
+            )
 
         jobs_domain.update_job_status(
             job.job_id, JobType.INGEST, JobStatus.SUCCEEDED,

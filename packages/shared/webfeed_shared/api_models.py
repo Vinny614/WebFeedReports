@@ -9,6 +9,8 @@ from pydantic import BaseModel, Field
 
 from .contracts import JobStatus, JobType
 
+SourceHealthStatus = Literal["never", "healthy", "degraded", "failed"]
+
 
 def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
@@ -21,6 +23,32 @@ class SearchFilters(BaseModel):
     tags: list[str] = Field(default_factory=list)
     date_from: datetime | None = None
     date_to: datetime | None = None
+
+
+class SourceHealth(BaseModel):
+    """Current operational health for one configured ingestion source."""
+
+    source_id: str
+    status: SourceHealthStatus = "never"
+    last_attempt_at: datetime | None = None
+    last_success_at: datetime | None = None
+    newest_published_at: datetime | None = None
+    success_count: int = 0
+    failure_count: int = 0
+    consecutive_failures: int = 0
+    document_count: int = 0
+    indexed_document_count: int = 0
+    chunk_count: int = 0
+    warnings: list[str] = Field(default_factory=list)
+    latest_error: str | None = None
+
+
+class SourceHealthSummary(BaseModel):
+    total: int = 0
+    healthy: int = 0
+    degraded: int = 0
+    failed: int = 0
+    never: int = 0
 
 
 class QueryRequest(BaseModel):

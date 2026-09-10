@@ -69,21 +69,22 @@ def ingest_source(source: Source) -> list[Document]:
     return _ingest_web(source)
 
 
-def _entry_content_html(entry) -> str | None:
+def _entry_content_html(entry) -> tuple[str | None, bool]:
     """Best available content for an RSS entry.
 
     Prefers the full ``content:encoded`` body, then falls back to the entry
-    summary/description. Returns ``None`` when the entry carries no content.
+    summary/description. The second return value identifies summary-only text so
+    ``auto`` content mode can fetch the linked article instead.
     """
     contents = entry.get("content")
     if contents:
         best = max((c.get("value", "") for c in contents), key=len, default="")
         if best.strip():
-            return best
+            return best, False
     summary = entry.get("summary")
     if summary and summary.strip():
-        return summary
-    return None
+        return summary, True
+    return None, False
 
 
 def _ingest_rss(source: Source) -> list[Document]:
@@ -92,27 +93,37 @@ def _ingest_rss(source: Source) -> list[Document]:
     parsed = feedparser.parse(raw)
     docs: list[Document] = []
     for entry in parsed.entries:
-        link = entry.get("link") or str(source.url)
+        link = (entry.get("link") or "").strip()
+        title = (entry.get("title") or "").strip()
+        # Some broken feeds contain an empty <item/> placeholder. Indexing it
+        # creates a generic source-page document that pollutes retrieval.
+        if not link or not title:
+            log.warning("RSS %s skipped placeholder entry without title/link", source.id)
+            continue
         doc_id = hashlib.sha1(link.encode("utf-8")).hexdigest()
         published = None
         if entry.get("published_parsed"):
             published = datetime(*entry.published_parsed[:6], tzinfo=timezone.utc)
+        content_html, content_is_summary = _entry_content_html(entry)
         docs.append(
             Document(
                 id=doc_id,
                 source_id=source.id,
                 url=link,
-                title=entry.get("title"),
+                title=title,
                 published_at=published,
                 raw_blob_path=raw_path,
-                content_html=_entry_content_html(entry),
+                content_html=content_html,
+                content_is_summary=content_is_summary,
             )
         )
     log.info("RSS %s -> %d documents", source.id, len(docs))
     return docs
 
 
-def _discover_article_links(base_url: str, html: str, max_pages: int) -> list[tuple[str, str | None]]:
+def _discover_article_links(
+    base_url: str, html: str, max_pages: int
+) -> list[tuple[str, str | None]]:
     """Find per-article links on a server-rendered listing page.
 
     Returns ``(url, title)`` pairs for same-host anchors that live *under* the
@@ -195,7 +206,9 @@ def fetch_document_html(document: Document) -> str:
     return _fetch(str(document.url)).decode("utf-8", errors="ignore")
 
 
-def extract_document_content(document: Document) -> tuple[str, datetime | None]:
+def extract_document_content(
+    document: Document, source: Source | None = None
+) -> tuple[str, datetime | None]:
     """Return ``(clean_text, published_date)`` for a document.
 
     RSS entries carry their own curated content (a full article for feeds that
@@ -208,9 +221,29 @@ def extract_document_content(document: Document) -> tuple[str, datetime | None]:
     For web (crawled) documents the article page is fetched once and both the
     main text and the article's published date are extracted from the same HTML.
     """
+    feed_text = ""
     if document.content_html:
-        text = normalize_text(extract_from_html(document.content_html))
-        if text:
-            return text, None
-    html = fetch_document_html(document)
-    return normalize_text(extract_from_html(html)), extract_date_from_html(html)
+        feed_text = normalize_text(extract_from_html(document.content_html))
+
+    mode = source.content_mode if source else "auto"
+    should_fetch = (
+        not feed_text
+        or mode == "article"
+        or (mode == "auto" and document.content_is_summary)
+    )
+    if not should_fetch:
+        return feed_text, None
+
+    try:
+        html = fetch_document_html(document)
+        article_text = normalize_text(extract_from_html(html))
+        if article_text:
+            return article_text, extract_date_from_html(html)
+    except Exception as exc:  # noqa: BLE001 - usable feed text is a safe fallback
+        if not feed_text:
+            raise
+        log.warning("Article enrichment failed for %s: %s", document.url, exc)
+
+    if feed_text:
+        return feed_text, None
+    return "", None

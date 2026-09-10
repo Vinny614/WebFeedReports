@@ -60,6 +60,11 @@ resource sourcesTable 'Microsoft.Storage/storageAccounts/tableServices/tables@20
   name: 'sources'
 }
 
+resource sourceHealthTable 'Microsoft.Storage/storageAccounts/tableServices/tables@2023-05-01' = {
+  parent: tableService
+  name: 'sourcehealth'
+}
+
 output storageId string = storage.id
 output storageName string = storage.name
 output blobEndpoint string = storage.properties.primaryEndpoints.blob

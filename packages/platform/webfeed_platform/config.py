@@ -29,6 +29,7 @@ class Settings(BaseSettings):
     recent_headings_blob_name: str = "recent-headings.json"
     jobs_table: str = "jobs"
     sources_table: str = "sources"
+    sources_health_table: str = "sourcehealth"
 
     # Azure AI Search
     search_endpoint: str = ""

@@ -61,6 +61,12 @@ def seed_registry(sources: list[Source]) -> int:
             "schedule": source.schedule or "",
             "tags": ",".join(source.tags),
             "crawl": source.crawl.model_dump_json() if source.crawl else "",
+            "content_mode": source.content_mode,
+            "expected_host": source.expected_host or "",
+            "expected_text": source.expected_text or "",
+            "min_documents": source.min_documents,
+            "min_text_chars": source.min_text_chars,
+            "max_age_days": source.max_age_days if source.max_age_days is not None else "",
         }
         table.upsert_entity(entity)
         count += 1
@@ -88,6 +94,16 @@ def list_enabled_sources() -> list[Source]:
                 schedule=e.get("schedule") or None,
                 tags=tags,
                 crawl=crawl,
+                content_mode=e.get("content_mode") or "auto",
+                expected_host=e.get("expected_host") or None,
+                expected_text=e.get("expected_text") or None,
+                min_documents=int(e.get("min_documents", 1)),
+                min_text_chars=int(e.get("min_text_chars", 100)),
+                max_age_days=(
+                    int(e["max_age_days"])
+                    if e.get("max_age_days") not in (None, "")
+                    else (None if "max_age_days" in e else 45)
+                ),
             )
         )
     return result

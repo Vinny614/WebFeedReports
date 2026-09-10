@@ -119,6 +119,24 @@ export interface Source {
   tags: string[];
 }
 
+export type SourceHealthStatus = "never" | "healthy" | "degraded" | "failed";
+
+export interface SourceHealth {
+  source_id: string;
+  status: SourceHealthStatus;
+  last_attempt_at?: string | null;
+  last_success_at?: string | null;
+  newest_published_at?: string | null;
+  success_count: number;
+  failure_count: number;
+  consecutive_failures: number;
+  document_count: number;
+  indexed_document_count: number;
+  chunk_count: number;
+  warnings: string[];
+  latest_error?: string | null;
+}
+
 async function http<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${baseUrl()}${path}`, {
     ...init,
@@ -133,6 +151,7 @@ async function http<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const api = {
   listSources: () => http<Source[]>("/sources"),
+  listSourceHealth: () => http<SourceHealth[]>("/health/sources"),
   chatStream: (
     messages: ChatMessage[],
     opts: {

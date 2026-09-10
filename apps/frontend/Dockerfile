@@ -1,8 +1,8 @@
 # syntax=docker/dockerfile:1
 FROM node:20-slim AS deps
 WORKDIR /app
-COPY apps/frontend/package.json ./
-RUN npm install
+COPY apps/frontend/package.json apps/frontend/package-lock.json ./
+RUN npm ci
 
 FROM node:20-slim AS builder
 WORKDIR /app

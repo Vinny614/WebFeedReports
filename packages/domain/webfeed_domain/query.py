@@ -67,12 +67,19 @@ def search(
     )
 
     items: list[QueryResultItem] = []
+    seen_documents: set[str] = set()
     for r in results:
         reranker = r.get("@search.reranker_score")
         # Drop weak vector-only near-misses; keep everything when the service
         # did not return a reranker score (semantic ranking unavailable).
         if reranker is not None and reranker < settings.min_reranker_score:
             continue
+        # Search ranks chunks, but callers expect articles. Keep only the
+        # strongest ranked chunk for each document before applying ``top``.
+        document_key = r.get("document_id") or r.get("url") or r["id"]
+        if document_key in seen_documents:
+            continue
+        seen_documents.add(document_key)
         text = r.get("text", "")
         items.append(
             QueryResultItem(

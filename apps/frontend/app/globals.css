@@ -463,6 +463,72 @@ button:focus {
   white-space: nowrap;
 }
 
+/* ---------- Source health dashboard ---------- */
+
+.app-health-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.app-health-card {
+  padding: 20px;
+  border: 1px solid var(--govuk-grey-2);
+  border-left: 8px solid var(--govuk-grey-1);
+  background: var(--govuk-white);
+}
+
+.app-health-card--healthy { border-left-color: var(--govuk-green); }
+.app-health-card--degraded { border-left-color: #f47738; }
+.app-health-card--failed { border-left-color: var(--govuk-red); }
+
+.app-health-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 15px;
+}
+
+.app-health-tag {
+  display: inline-block;
+  padding: 4px 8px;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  white-space: nowrap;
+  background: var(--govuk-grey-3);
+}
+
+.app-health-tag--healthy { color: var(--govuk-white); background: var(--govuk-green); }
+.app-health-tag--degraded { color: var(--govuk-black); background: #ffdd99; }
+.app-health-tag--failed { color: var(--govuk-white); background: var(--govuk-red); }
+
+.app-health-list {
+  margin: 0 0 15px;
+  font-size: 1rem;
+}
+
+.app-health-list div {
+  display: grid;
+  grid-template-columns: minmax(8rem, 1fr) 1.5fr;
+  gap: 10px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--govuk-grey-3);
+}
+
+.app-health-list dt { font-weight: 700; }
+.app-health-list dd { margin: 0; }
+
+.app-health-card__message {
+  padding: 10px;
+  border-left: 5px solid var(--govuk-red);
+  background: var(--govuk-grey-3);
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 700px) {
+  .app-health-grid { grid-template-columns: 1fr; }
+}
+
 /* ---------- Status / loading ---------- */
 
 .app-status {

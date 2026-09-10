@@ -16,6 +16,11 @@
 #     enabled:  bool (default true)
 #     schedule: cron expression for polling cadence (optional; falls back to defaults)
 #     tags:     list of free-form labels (optional)
+#     content_mode: RSS policy: "feed" | "auto" | "article". Auto fetches
+#                   the article when the feed supplies only a teaser.
+#     expected_host / expected_text: optional source validation checks
+#     min_documents / min_text_chars: useful-content health thresholds
+#     max_age_days: mark dated content stale after this many days (null disables)
 #     crawl:    web-only options
 #       depth:  link-follow depth, 0 = only the given page (default 0),
 #               >= 1 = discover per-article links on the page and ingest each
@@ -43,29 +48,39 @@ sources:
 
   - id: boeing-press
     type: rss
-    url: https://boeing.mediaroom.com/news-releases-statements?pagetemplate=rss&category=1
+    url: https://boeing.mediaroom.com/news-releases-statements?pagetemplate=rss
     tags: [boeing, defence, supplier, business]
+    content_mode: article
+    expected_host: boeing.mediaroom.com
 
   - id: leonardo-press
     type: rss
     url: https://www.leonardo.com/en/rss/-/rss/66667/16624040
     tags: [leonardo, defence, supplier, business]
+    content_mode: article
+    expected_host: www.leonardo.com
 
   # ── Aviation safety & regulators ───────────────────────────────────
   - id: aaib-reports
     type: rss
     url: https://www.gov.uk/aaib-reports.atom
     tags: [aviation-safety, uk, air-accidents]
+    content_mode: article
+    expected_host: www.gov.uk
 
   - id: caa-cap722
     type: web
-    url: https://www.caa.co.uk/our-work/publications/documents/content/cap722/
+    url: https://www.caa.co.uk/data-and-publications/publications/documents/content/cap-722/
     tags: [caa, uk, regulation, uas]
+    expected_host: www.caa.co.uk
+    expected_text: CAP 722
 
   - id: easa-press-releases
     type: rss
     url: https://www.easa.europa.eu/en/newsroom-and-events/press-releases/feed.xml
     tags: [easa, eu, aviation-safety]
+    content_mode: auto
+    expected_host: www.easa.europa.eu
 
   - id: eurocontrol-ead
     type: web

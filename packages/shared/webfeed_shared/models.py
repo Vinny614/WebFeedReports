@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from enum import Enum
+from typing import Literal
 
 from pydantic import BaseModel, Field, HttpUrl
 
@@ -32,6 +33,14 @@ class Source(BaseModel):
     schedule: str | None = None
     tags: list[str] = Field(default_factory=list)
     crawl: CrawlOptions | None = None
+    # RSS content handling: feed trusts the supplied body, article always
+    # fetches the linked page, and auto fetches when only a summary is present.
+    content_mode: Literal["feed", "auto", "article"] = "auto"
+    expected_host: str | None = None
+    expected_text: str | None = None
+    min_documents: int = 1
+    min_text_chars: int = 100
+    max_age_days: int | None = 45
 
 
 class Document(BaseModel):
@@ -47,6 +56,7 @@ class Document(BaseModel):
     # Raw content supplied directly by the source (e.g. an RSS entry's
     # content:encoded/summary). Preferred over re-fetching the landing page.
     content_html: str | None = None
+    content_is_summary: bool = False
 
 
 class Chunk(BaseModel):

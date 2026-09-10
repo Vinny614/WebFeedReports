@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import uuid
 from datetime import datetime, timezone
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from webfeed_shared.api_models import (
     BriefingReport,
@@ -34,6 +35,15 @@ _SCHEMA_HINT = {
     "sections": [{"heading": "string", "content": "string"}],
     "citations": [{"source_id": "string", "title": "string", "url": "string"}],
 }
+
+
+def _normalize_url(value: str | None) -> str:
+    if not value:
+        return ""
+    parsed = urlsplit(value.strip())
+    query = urlencode(sorted(parse_qsl(parsed.query, keep_blank_values=True)))
+    path = parsed.path.rstrip("/") or "/"
+    return urlunsplit((parsed.scheme.lower(), parsed.netloc.lower(), path, query, ""))
 
 
 def _build_context(query: str, filters: SearchFilters) -> list[dict]:
@@ -157,6 +167,7 @@ def _generate_section(
     # Map each retrieved article URL to its published date so we can attach it
     # to the LLM-produced items (which only carry title/source/url/summary).
     published_by_url = {h.url: h.published_at for h in hits if h.url and h.published_at}
+    retrieved_by_url = {_normalize_url(h.url): h for h in hits if h.url}
 
     if section.style == "items":
         schema = {
@@ -193,11 +204,17 @@ def _generate_section(
         for it in raw_items:
             if not isinstance(it, dict):
                 continue
-            url = (it.get("url") or "").strip() or None
-            if url and url in seen_urls:
+            proposed_url = (it.get("url") or "").strip() or None
+            normalized_url = _normalize_url(proposed_url)
+            hit = retrieved_by_url.get(normalized_url)
+            # Item URLs must be grounded in the retrieved context.
+            if not proposed_url or hit is None:
+                continue
+            url = str(hit.url) if hit and hit.url else None
+            if normalized_url and normalized_url in seen_urls:
                 continue  # cross-section dedupe
-            if url:
-                seen_urls.add(url)
+            if normalized_url:
+                seen_urls.add(normalized_url)
             title = (it.get("title") or "").strip()
             if not title:
                 continue
@@ -206,7 +223,11 @@ def _generate_section(
                     title=title,
                     url=url,
                     source=(it.get("source") or "").strip() or None,
-                    published_at=published_by_url.get(url) if url else None,
+                    published_at=(
+                        hit.published_at
+                        if hit and hit.published_at
+                        else published_by_url.get(url)
+                    ),
                     summary=(it.get("summary") or "").strip(),
                 )
             )

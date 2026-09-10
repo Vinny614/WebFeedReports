@@ -1,8 +1,11 @@
 # WebFeedReports — Backlog
 
-Forward-looking enhancements. Nothing here is implemented yet; captured for planning.
-Recently shipped (for context): hybrid **search reranker** (semantic L2 + score threshold)
-and the grounded **Chat** page (streaming RAG over the AI Search index).
+Forward-looking enhancements. Recently shipped (for context): hybrid **search
+reranker**, grounded **Chat**, linked-article RSS enrichment, source health on the
+dashboard, distinct-document retrieval, and grounded report URLs.
+
+Deferred source work: PDF extraction/backfill, structured API connectors, and
+replacement of reference/data-portal sources with more update-oriented feeds.
 
 ---
 

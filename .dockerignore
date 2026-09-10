@@ -1,0 +1,17 @@
+# Local dependency/build outputs must not enter Linux ACR builds.
+**/node_modules
+**/.next
+**/__pycache__
+**/*.py[cod]
+
+# Local tooling and repository metadata are not runtime build inputs.
+.git
+.venv
+.pytest_cache
+.ruff_cache
+.vscode
+
+# Test and generated output.
+tests
+**/coverage
+**/dist

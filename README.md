@@ -10,6 +10,8 @@ with Azure OpenAI.
 - **IaC:** Bicep (`infra/`).
 - **Sources:** declarative `config/sources.yaml`, published to Blob and seeded into
   a Table Storage registry at runtime (Option B).
+- **Source quality:** per-source content policies, useful-content validation, and
+  current health persisted in the `sourcehealth` table and shown on the dashboard.
 
 ## Architecture
 
@@ -25,6 +27,22 @@ Browser → frontend (Next.js) → api (FastAPI) → Service Bus → worker
 | frontend | Demo UI: dashboard, search, report requests                     |
 | api      | FastAPI orchestration: query, report submission, job status     |
 | worker   | Scheduled + queued ingestion, extraction, indexing, reporting   |
+
+## Source quality and health
+
+RSS sources can set `content_mode` to `feed`, `auto`, or `article`. `auto` follows
+the linked article when the feed only provides a summary; `article` always attempts
+full-page enrichment and falls back to usable feed text. Empty placeholder feed
+items are ignored.
+
+Optional source checks (`expected_host`, `expected_text`, `min_documents`,
+`min_text_chars`, and `max_age_days`) classify each ingest attempt as `healthy`,
+`degraded`, or `failed`. A configured source with no attempts is `never`. Health is
+available at `/health/sources`, `/health/sources/{source_id}`, and `/health/summary`.
+
+Search results are grouped by document before `top` is applied, so several chunks
+from one article do not crowd out other articles. Generated report item links must
+match a URL retrieved from the index after normalization.
 
 ## Repository layout
 
