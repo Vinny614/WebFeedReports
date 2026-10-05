@@ -59,6 +59,7 @@ resource chatDeployment 'Microsoft.CognitiveServices/accounts/deployments@2024-1
 }
 
 output openaiId string = openai.id
+output openaiName string = openai.name
 output openaiEndpoint string = openai.properties.endpoint
 output embedDeploymentName string = embedDeployment.name
 output chatDeploymentName string = chatDeployment.name

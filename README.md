@@ -83,6 +83,9 @@ keys are needed in development.
 Spin the whole demo up for a customer session, then tear it down afterwards so it
 costs nothing between demos. Both scripts are idempotent and read `namePrefix` /
 `location` from `infra/main.bicepparam`, so there is one source of truth for names.
+You can temporarily override the region with `-Location` if Azure reports a
+regional capacity constraint. Azure AI Search can be placed separately with
+`-SearchLocation`.
 
 **Prerequisites:** `az login` (Contributor on the subscription) and the Azure CLI.
 No local Docker is required — images are built in ACR.
@@ -101,10 +104,27 @@ No local Docker is required — images are built in ACR.
 Options:
 
 - `./scripts/demo-up.ps1 -ResourceGroup rg-webscrape -Tag demo` — override defaults.
+- `./scripts/demo-up.ps1 -Location eastus2` — deploy in another supported region.
+- `./scripts/demo-up.ps1 -Location eastus2 -SearchLocation centralus` — keep the
+  application in `eastus2` but place Search in `centralus`.
 - `./scripts/demo-up.ps1 -SkipIngest` — deploy without the initial content load.
 
 `demo-down.ps1` also purges the soft-deleted Azure OpenAI account so the next
-`demo-up.ps1` can reuse the same name immediately.
+`demo-up.ps1` can reuse the same name immediately. When overriding the deployment
+region, pass the same override during teardown:
+`./scripts/demo-down.ps1 -ResourceGroup rg-webscrape -Location eastus2`.
+As a recovery safeguard, `demo-up.ps1` also detects and purges a matching stale
+soft-deleted demo account before deployment.
+
+If deployment fails with `AKSCapacityHeavyUsage`, Azure does not currently have
+enough Container Apps/AKS capacity in the selected region. Tear down the partial
+deployment and retry with `-Location` set to a region that supports the required
+Azure OpenAI models. The script now stops immediately after an infrastructure
+failure instead of continuing with empty deployment outputs.
+
+If only Azure AI Search fails with `InsufficientResourcesAvailable`, the other
+resources can remain in place. Re-run `demo-up.ps1` with `-SearchLocation` set to
+another supported region; for example, `-Location eastus2 -SearchLocation centralus`.
 
 ## Deploy (manual steps)
 

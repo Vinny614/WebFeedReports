@@ -14,18 +14,23 @@
     7. Print the live demo URL.
 
   Everything uses Managed Identity / Entra auth — no keys. namePrefix and
-  location are read from infra/main.bicepparam so there is a single source of
-  truth for resource names.
+  location are read from infra/main.bicepparam by default. Use -Location to
+  temporarily select another region when the configured region has no capacity,
+  or -SearchLocation to move only Azure AI Search.
 
 .EXAMPLE
   ./scripts/demo-up.ps1
   ./scripts/demo-up.ps1 -ResourceGroup rg-webscrape -Tag demo
+  ./scripts/demo-up.ps1 -Location eastus2
+  ./scripts/demo-up.ps1 -Location eastus2 -SearchLocation centralus
 #>
 param(
   [string]$ResourceGroup = "rg-webscrape",
   # Image tag prefix; a build timestamp is appended so each run rolls a new revision.
   [string]$Tag = "demo",
   [string]$ParamFile = "infra/main.bicepparam",
+  [string]$Location,
+  [string]$SearchLocation,
   [switch]$SkipIngest
 )
 
@@ -33,13 +38,15 @@ $ErrorActionPreference = "Stop"
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $paramPath = Join-Path $repoRoot $ParamFile
 
-# --- Read namePrefix + location from the bicepparam (single source of truth) ---
+# --- Read namePrefix + default location from the bicepparam ------------------
 $paramText = Get-Content $paramPath -Raw
 $namePrefix = ([regex]::Match($paramText, "param\s+namePrefix\s*=\s*'([^']+)'")).Groups[1].Value
-$location = ([regex]::Match($paramText, "param\s+location\s*=\s*'([^']+)'")).Groups[1].Value
-if (-not $namePrefix -or -not $location) {
+$configuredLocation = ([regex]::Match($paramText, "param\s+location\s*=\s*'([^']+)'")).Groups[1].Value
+if (-not $namePrefix -or (-not $Location -and -not $configuredLocation)) {
   throw "Could not read namePrefix/location from $ParamFile."
 }
+if (-not $Location) { $Location = $configuredLocation }
+if (-not $SearchLocation) { $SearchLocation = $Location }
 
 # Derived resource names (must match the Bicep modules).
 $acrName = ($namePrefix + "acr").ToLower().Replace("-", "")
@@ -57,14 +64,34 @@ $frontendImage = "$loginServer/webfeed-frontend:$imageTag"
 Write-Host "=== WebFeedReports demo: UP ===" -ForegroundColor Cyan
 Write-Host "  Resource group : $ResourceGroup"
 Write-Host "  Name prefix    : $namePrefix"
-Write-Host "  Location       : $location"
+Write-Host "  Location       : $Location"
+Write-Host "  Search location: $SearchLocation"
 Write-Host "  Registry       : $loginServer"
 Write-Host "  Image tag      : $imageTag"
 Write-Host ""
 
 # --- 1. Resource group -------------------------------------------------------
 Write-Host "[1/6] Ensuring resource group..." -ForegroundColor Yellow
-az group create -n $ResourceGroup -l $location --tags SecurityControl=Ignore --output none
+az group create -n $ResourceGroup -l $Location --tags SecurityControl=Ignore --output none
+
+# A deleted resource group can leave its Azure OpenAI account soft-deleted.
+# Purge only this demo's matching account before ARM validates the deployment.
+$openaiName = "$namePrefix-openai"
+$deletedOpenAI = az cognitiveservices account list-deleted `
+  --query "[?name=='$openaiName' && location=='$Location'] | [0].name" -o tsv
+if ($LASTEXITCODE -ne 0) {
+  throw "Could not check for a soft-deleted Azure OpenAI account named '$openaiName'."
+}
+if ($deletedOpenAI) {
+  Write-Host "      purging soft-deleted OpenAI account '$openaiName'..." -ForegroundColor Yellow
+  az cognitiveservices account purge `
+    --name $openaiName `
+    --resource-group $ResourceGroup `
+    --location $Location --output none
+  if ($LASTEXITCODE -ne 0) {
+    throw "Could not purge soft-deleted Azure OpenAI account '$openaiName' in '$Location'."
+  }
+}
 
 # --- 2. Container registry (needed before we can build) ----------------------
 Write-Host "[2/6] Ensuring container registry '$acrName'..." -ForegroundColor Yellow
@@ -111,12 +138,25 @@ Build-Image -Repo "webfeed-frontend" -Dockerfile "apps/frontend/Dockerfile"
 
 # --- 4. Deploy infrastructure ------------------------------------------------
 Write-Host "[4/6] Deploying infrastructure (this can take several minutes)..." -ForegroundColor Yellow
-$outputs = az deployment group create `
+$deploymentJson = az deployment group create `
   --resource-group $ResourceGroup `
   --template-file (Join-Path $repoRoot "infra/main.bicep") `
-  --parameters namePrefix=$namePrefix location=$location `
+  --parameters namePrefix=$namePrefix location=$Location searchLocation=$SearchLocation `
   apiImage=$apiImage workerImage=$workerImage frontendImage=$frontendImage `
-  --query properties.outputs -o json | ConvertFrom-Json
+  --query properties.outputs -o json
+
+if ($LASTEXITCODE -ne 0) {
+  throw @"
+Infrastructure deployment failed, so sources were not published and ingest was not started.
+Review the Azure error above. For a regional capacity error, retry with -Location
+or, when only Azure AI Search failed, with -SearchLocation set to another region.
+"@
+}
+
+$outputs = $deploymentJson | ConvertFrom-Json
+if (-not $outputs.storageName.value -or -not $outputs.frontendFqdn.value) {
+  throw "Infrastructure deployment completed without the required storageName/frontendFqdn outputs."
+}
 
 $frontendFqdn = $outputs.frontendFqdn.value
 $storageName = $outputs.storageName.value
@@ -205,4 +245,4 @@ Write-Host "=== Demo is live ===" -ForegroundColor Green
 Write-Host "  $frontendUrl"
 Write-Host ""
 Write-Host "When you're done, tear it all down with:" -ForegroundColor Cyan
-Write-Host "  ./scripts/demo-down.ps1 -ResourceGroup $ResourceGroup"
+Write-Host "  ./scripts/demo-down.ps1 -ResourceGroup $ResourceGroup -Location $Location"

@@ -14,6 +14,9 @@ param namePrefix string
 @description('Azure region for all resources.')
 param location string = resourceGroup().location
 
+@description('Azure region for AI Search. Override independently when the primary region has no Search capacity.')
+param searchLocation string = location
+
 @description('Container image references (registry/repo:tag). Set after ACR build.')
 param apiImage string
 param workerImage string
@@ -54,7 +57,7 @@ module storage 'modules/storage.bicep' = {
 module search 'modules/search.bicep' = {
   name: 'search'
   params: {
-    location: location
+    location: searchLocation
     namePrefix: namePrefix
   }
 }
@@ -89,8 +92,8 @@ module rbac 'modules/rbac.bicep' = {
   name: 'rbac'
   params: {
     storageName: storage.outputs.storageName
-    searchName: '${namePrefix}-search'
-    openaiName: '${namePrefix}-openai'
+    searchName: search.outputs.searchName
+    openaiName: openai.outputs.openaiName
     servicebusNamespaceName: servicebus.outputs.namespaceName
     registryName: registry.outputs.registryName
     apiPrincipalId: identity.outputs.apiPrincipalId

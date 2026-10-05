@@ -19,4 +19,5 @@ resource search 'Microsoft.Search/searchServices@2024-03-01-preview' = {
 }
 
 output searchId string = search.id
+output searchName string = search.name
 output searchEndpoint string = 'https://${search.name}.search.windows.net'
